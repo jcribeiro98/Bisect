@@ -10,13 +10,14 @@ inference <- function(x,S, method = "mahalanobis"){
   
   
   if(exists("ODM_env", envir = globalenv()) != T){
+    ODM_env = new.env()
     for (s in set_power(as.numeric(1:(ncol(DB)-2)))){
       if (set_is_empty(s) != T){
-        ODM_env[[glue("method{set_names(s)}")]] = fit(method, S)
-        ODM_env <<-ODM_env
-        rm(ODM_env,envir = enviroment())
+        ODM_env[[glue("method{set_names(s)}")]] = fit(method, s)
       }
     }
+    ODM_env <<-ODM_env
+    rm(ODM_env)
   }
   
   #Methods: Given how each method is defined in the method environment, call them
