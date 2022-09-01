@@ -20,7 +20,7 @@ inference <- function(x,S, method = "mahalanobis"){
     }
   }
   
-  #Methods: Given how each method is store in the method environment, call them
+  #Methods: Given how each method is defined in the method environment, call them
   #to perform inference 
   
   if(method == "mahalanobis"){
