@@ -4,6 +4,7 @@ library(car)
 library(dplyr)
 library(uniformly)
 source('src/utils.R')
+source('src/inference_methods.R')
 
 
 bisect <- function(L, x, iternum=1000, verb = T){
@@ -71,12 +72,12 @@ f <- function(x,verb = F, h_index = F){
   index = matrix(0,ncol = 2^(ncol(DB)-2)-1, nrow=1)
   
   j = 0
-  for (i in supS){
+  for (S in supS){
     if (j == 0){} 
     #' for some weird reason the set package doesnt have implemented 
     #' the "remove" operator, so we need to do this in order to 
     #' avoid the empty set.
-    else{if (distmah(i,x) > critval(i,verb=F)){ index[j] = 1 } }
+    else{if (inference(x, S, method = "mahalanobis")){ index[j] = 1 } }
     j = j + 1}
   
   if(sum(index[1:(2^(ncol(DB)-2)-2)]) > 0 && index[2^(ncol(DB)-2)-1] == 0){
