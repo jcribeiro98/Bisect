@@ -5,6 +5,8 @@ source("src/utils.R")
 
 
 inference <- function(x,S, method = "mahalanobis"){
+  ##Pending description##
+  
   
   if(exists("ODM_env", envir = globalenv()) != T){
     for (s in set_power(as.numeric(1:(ncol(DB)-2)))){
