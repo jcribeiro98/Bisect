@@ -57,6 +57,26 @@ critval <-function(S,verb = F){
   return(qchisq(0.95, length(S)))}
 
 
+set_names = function(s, sep = "_"){  
+  #' @title Names of a set
+  #' 
+  #' @description Given an array or list, the function obtains a character 
+  #' containing the name (as a character) of each element, separated by sep.
+  #' 
+  #' Arguments:
+  #' @param s : (array or list) Array whose names want to be fetched
+  #' @param sep : (character) Separator used in between the names (defaults to 
+  #'              "_")
+  
+  
+  index = as.vector(matrix(0,1,length(s)))
+  j = 1
+  for (i in s){index[j] = i; j = j + 1}
+  result = paste(as.character(index), collapse = sep)
+  return(result)
+}
+
+
 distmah <- function(S,x){
   #' @title Calculation of the Mah. distance.
   #' 
