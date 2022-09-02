@@ -19,7 +19,7 @@ fit <- function(method, S){
   #Methods:
   
   if (method == "mahalanobis"){
-    S
+    S #Needed for fixing a bug regarding R lazy evaluation in function closures
     result = function(x){distmah(S,x) > critval(S,verb=F)}
   }
   
