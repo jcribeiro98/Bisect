@@ -5,8 +5,8 @@ library(dplyr)
 library(hrbrthemes)
 library(ggplot2)
 library(latex2exp)
-source('src/bisect_strat.R')
-source('src/hidden_strat.R')
+source('src/HOGen/bisect_strat.R')
+source('src/HOGen/hidden_strat.R')
 
 #------------------------------------------------------------------------------#
 #                         n-dimensional Linear Search                          #

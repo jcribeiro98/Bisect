@@ -2,7 +2,7 @@ library(sets)
 library(glue)
 library(car)
 library(dplyr)
-
+source("src/HOGen/bisect_strat")
 
 hidden_sample = function(B=100, 
                          eps, 
@@ -52,7 +52,8 @@ hidden_sample = function(B=100,
 main_hidden <-function(B=B, 
                        eps = eps, 
                        l = min(DB[2:(ncol(DB)-1)]), 
-                       u = max(DB[2:(ncol(DB)-1)])){
+                       u = max(DB[2:(ncol(DB)-1)]),
+                       method = "mahalanobis"){
   #' @title Main function for the hidden algorithm
   #' 
   #' @description Performs the hidden sampling methods as described in Georg's 

@@ -1,4 +1,4 @@
-source("src/utils.R")
+source("src/registry_extras/utils.R")
 
 
 fit_all_methods <- function(method){

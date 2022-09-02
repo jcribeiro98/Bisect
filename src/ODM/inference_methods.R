@@ -1,8 +1,8 @@
 library(sets)
 library(glue)
 library(dplyr)
-source("src/utils.R")
-source("src/fit_method.R")
+source("src/registry_extras/utils.R")
+source("src/ODM/fit_method.R")
 
 
 inference <- function(x,S, method = "mahalanobis"){
