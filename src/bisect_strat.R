@@ -1,4 +1,5 @@
 library(sets)
+library(crayon)
 library(glue)
 library(car)
 library(dplyr)
@@ -102,7 +103,7 @@ f <- function(x,verb = F, h_index = F){
 }
 
 
-main <- function(B=100, seed = F, verb = T){
+main <- function(B=100, seed = F, verb = T, dev_opt = T){
   #' @title Main function for the bisect experiment
   #' 
   #' @description Given the number of data that you want to generate (in this 
@@ -118,6 +119,7 @@ main <- function(B=100, seed = F, verb = T){
   #'              If class(seed) == numerical, then it will execute the given
   #'              seed.
   #' @param verb : (logical) Control if the function have to be verbose or not.
+  #' @param dev_opt : (logical) Control some developer/debug options
   
   
   if(class(seed) == 'numeric'){
@@ -130,7 +132,12 @@ main <- function(B=100, seed = F, verb = T){
     write.table(seed, file = "seed/seed.txt", sep = " ")
     set.seed(seed)
   }
-  
+  if(dev_opt == T){warning(glue("The developer option has been activated. 
+                                This means that the ODM environment will not 
+                                be deleted, and therefore some collution might
+                                ocur with following experiments. Poceed with
+                                caution
+                                "))}
   
   x_list = runif_on_sphere(n = B, d = ncol(DB) - 2, r = 1) #sample the 
                                                            #directional vectors
@@ -147,7 +154,8 @@ main <- function(B=100, seed = F, verb = T){
   
   hidden_x_list = hidden_x_list[rowSums(hidden_x_list) != 0,]
   
-  rm(ODM_env, envir = globalenv())
+  if(dev_opt == F){
+  rm(ODM_env, envir = globalenv())}
   return(hidden_x_list)
 }
 

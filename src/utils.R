@@ -37,7 +37,9 @@ DB_gen <- function(db){
   }
   DB['id'] = 1:nrow(DB)
   
-  dM = mahalanobis(as.matrix(DB[2:(ncol(db) + 1)],header=T),colMeans(as.matrix(DB[2:(ncol(db) + 1)],header=T)),cov(as.matrix(DB[2:(ncol(db) + 1)],header=T)))
+  dM = mahalanobis(as.matrix(DB[2:(ncol(db) + 1)],header=T),
+                   colMeans(as.matrix(DB[2:(ncol(db) + 1)],header=T)),
+                   cov(as.matrix(DB[2:(ncol(db) + 1)],header=T)))
   DB[ncol(db)+2]=dM
   colnames(DB)[ncol(db)+2] = 'dM'
   DB <<- DB
