@@ -6,6 +6,7 @@ library(dplyr)
 library(uniformly)
 source('src/registry_extras/utils.R')
 source('src/ODM/inference_methods.R')
+source('src/registry_extras/classes.R')
 
 
 bisect <- function(L, x, iternum=1000, verb = T){
@@ -32,12 +33,17 @@ bisect <- function(L, x, iternum=1000, verb = T){
   a = 0; b = L
   for (i in 1:iternum){
     c = (b+a)/2
-    if (f(c*x + colMeans(DB[2:(ncol(DB) - 1)])) > 0){b = c} #Direction vector 
+    
+    check_if_outlier = f(c*x + colMeans(DB[2:(ncol(DB) - 1)]))
+    outlier_indicator = check_if_outlier[[1]]
+    outlier_type = check_if_outlier[[2]]
+    
+    if (outlier_indicator > 0){b = c} #Direction vector 
                                                    #(x*c) + an origin (colMeans) 
-    else if (f(c*x + colMeans(DB[2:(ncol(DB) - 1)])) < 0){a = c}
-    else{f(c*x + colMeans(DB[2:(ncol(DB) - 1)]),verb=verb); break}
+    else if (outlier_indicator < 0){a = c}
+    else{ print(glue("x in {outlier_type}")); break}
   }
-  return(c)
+  return(list(c, outlier_type))
 }
 
 
@@ -74,36 +80,32 @@ f <- function(x,verb = F, h_index = F, method = "mahalanobis"){
   
   j = 0
   for (S in supS){
-    if (j == 0){} 
-    #' for some weird reason the set package doesnt have implemented 
-    #' the "remove" operator, so we need to do this in order to 
-    #' avoid the empty set.
-    else{if (inference(x, S, method)){ index[j] = 1 } }
+    if(set_is_empty(S) != T){if (inference(x, S, method)){ index[j] = 1 }}
     j = j + 1}
   
   if(sum(index[1:(2^(ncol(DB)-2)-2)]) > 0 && index[2^(ncol(DB)-2)-1] == 0){
-    if(verb==T){print(glue('x in H1'))}
     result = 0}
   else if(isTRUE(all.equal(index, h2))){
-    if(verb==T){print(glue('x in H2'))}
     result = 0}
   else if(sum(index[1:(2^(ncol(DB)-2)-2)]) > 0 && index[2^(ncol(DB)-2)-1] == 1){
     if(verb==T){
-      print(glue('x Outside of bounds'))}; result = 1}
-  else{if(verb==T){print(glue('x in the total acceptance area'))}; result = -1}
+      print(glue('x Outside of bounds'))}; result = list(1, 'OB')}
+  else{if(verb==T){print(glue('x in the total acceptance area'))}; 
+    result = list(-1, 'IL')}
   
   if(h_index == T){ 
     if(sum(index[1:(2^(ncol(DB)-2)-2)]) > 0 && index[2^(ncol(DB)-2)-1] == 0){
-    result = c(0,"h1")
+    result = list(0,"H1")
   }
-    if(isTRUE(all.equal(index, h2))){ result = c(0, 'h2')}
+    if(isTRUE(all.equal(index, h2))){ result = list(0, 'H2')}
   }
   
   return(result)
 }
 
 
-main <- function(B=100, seed = F, verb = T, dev_opt = T){
+main <- function(B=100, method = "mahalanobis", seed = F,
+                 verb = T, dev_opt = T){
   #' @title Main function for the bisect experiment
   #' 
   #' @description Given the number of data that you want to generate (in this 
@@ -132,30 +134,39 @@ main <- function(B=100, seed = F, verb = T, dev_opt = T){
     write.table(seed, file = "seed/seed.txt", sep = " ")
     set.seed(seed)
   }
-  if(dev_opt == T){warning(glue("The developer option has been activated. 
+  if(dev_opt == T){glue({red$italic$bold("The developer option has been activated. 
                                 This means that the ODM environment will not 
-                                be deleted, and therefore some collution might
-                                ocur with following experiments. Poceed with
+                                be deleted, and therefore some collusion might
+                                occur with following experiments. Poceed with
                                 caution
-                                "))}
+                                ")})}
   
   x_list = runif_on_sphere(n = B, d = ncol(DB) - 2, r = 1) #sample the 
                                                            #directional vectors
   L = max(sqrt(rowSums(DB[2:(ncol(DB)-1)]^2)))
   hidden_x_list = matrix(0, nrow = nrow(x_list), ncol = ncol(x_list))
-
+  hidden_x_type = matrix(0, nrow = nrow(x_list), ncol = 1)
   
+  start_time = Sys.time()
   for (i in 1:nrow(x_list)){
-    hidden_c = bisect(L=L, x = x_list[i,], verb = verb)
-    if(f(hidden_c[1]*(x_list[i,]) + colMeans(DB[2:(ncol(DB)-1)])) == 0){ 
+    bisection_results = bisect(L=L, x = x_list[i,], verb = verb)
+    hidden_c = bisection_results[[1]]
+    outlier_type = bisection_results[[2]]
+    
+    if(outlier_type %in% c("H1", "H2")){ 
       hidden_x_list[i,] = hidden_c*(x_list[i,]) + colMeans(DB[2:(ncol(DB)-1)])
+      hidden_x_type[i,] = outlier_type
       }
   }
+  end_time = Sys.time()
+  exec_time = end_time - start_time
   
   hidden_x_list = hidden_x_list[rowSums(hidden_x_list) != 0,]
+  gen_result = hog_method(DB, B, method, "bisection", 
+                          ODM_env, hidden_x_list, hidden_x_type, exec_time)
   
   if(dev_opt == F){
   rm(ODM_env, envir = globalenv())}
-  return(hidden_x_list)
+  return(gen_result)
 }
 

@@ -2,7 +2,7 @@ library(sets)
 library(glue)
 library(car)
 library(dplyr)
-source("src/HOGen/bisect_strat")
+source("src/HOGen/bisect_strat.R")
 
 hidden_sample = function(B=100, 
                          eps, 
