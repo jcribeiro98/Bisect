@@ -7,12 +7,12 @@ DB_gen <- function(db){
 #' @title Formating of a database for the bisection method
 #' 
 #' @description The methods developed in this project utilizes an specific
-#' data.frame arquitecture to ease a lot of the calls needed during the 
+#' data.frame architecture to ease a lot of the calls needed during the 
 #' *bisect* method. We included a function to reshape any given matrix/df 
-#' into the desired arquitecture. The final df will consist of 
+#' into the desired architecture. The final df will consist of 
 #'            ~id |  y1 |  ... | yn | ~dM
 #' Where id is a vector of ids, y1...yn are a renaming of the numerical columns
-#' presented on the prior dataframe and dM is the Mahanalobis distance of all 
+#' presented on the prior dataframe and dM is the Mahalanobis distance of all 
 #' the data.
 #' 
 #' @note ~ -> Indicates that the df feature might change in further releases.
