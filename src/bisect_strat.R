@@ -147,6 +147,7 @@ main <- function(B=100, seed = F, verb = T){
   
   hidden_x_list = hidden_x_list[rowSums(hidden_x_list) != 0,]
   
+  rm(ODM_env, envir = globalenv())
   return(hidden_x_list)
 }
 
