@@ -5,12 +5,12 @@ source("src/registry_extras/utils.R")
 source("src/ODM/fit_method.R")
 
 
-inference <- function(x,S, method = "mahalanobis"){
+inference <- function(x,S, method = "mahalanobis",...){
   ##Pending description##
   
   
   if(exists("ODM_env", envir = globalenv()) != T){
-    fit_all_methods(method)
+    fit_all_methods(method,...)
   }
   
   #Methods: Given how each method is defined in the method environment, call them

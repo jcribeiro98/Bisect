@@ -10,7 +10,7 @@ source('src/ODM/inference_methods.R')
 source('src/registry_extras/classes.R')
 
 
-bisect <- function(L, x, iternum=1000, verb = T){
+bisect <- function(L, x, iternum=1000, verb = T,...){
   #' @title Bisection method implementation for function f
   #' 
   #' @description Performs the bisection algorithm over the function 
@@ -48,7 +48,7 @@ bisect <- function(L, x, iternum=1000, verb = T){
 }
 
 
-f <- function(x,verb = F, h_index = F, method = "mahalanobis"){
+f <- function(x,verb = F, h_index = F, method = "mahalanobis",...){
   #' @title Bisection main function 
   #' 
   #' @description Defines the function that is going to be used in the bisection
@@ -81,7 +81,7 @@ f <- function(x,verb = F, h_index = F, method = "mahalanobis"){
   
   j = 0
   for (S in supS){
-    if(set_is_empty(S) != T){if (inference(x, S, method)){ index[j] = 1 }}
+    if(set_is_empty(S) != T){if (inference(x, S, method,...)){ index[j] = 1 }}
     j = j + 1}
   
   if(sum(index[1:(2^(ncol(DB)-2)-2)]) > 0 && index[2^(ncol(DB)-2)-1] == 0){
@@ -101,7 +101,7 @@ f <- function(x,verb = F, h_index = F, method = "mahalanobis"){
 
 
 main <- function(B=100, method = "mahalanobis", seed = F,
-                 verb = T, dev_opt = F){
+                 verb = T, dev_opt = F,...){
   #' @title Main function for the bisect experiment
   #' 
   #' @description Given the number of data that you want to generate (in this 
