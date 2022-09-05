@@ -1,7 +1,7 @@
 library(crayon)
 
 
-hog_method <- function(DB, B ,od_method, hog_method, 
+hog_method <- function(DB, B ,od_name, hog_name, 
                        ODM_env, ho_list, ho_type, exec_tyme){
   structure(list(DB, B ,od_name, hog_name,
                  ODM_env, ho_list, ho_type, exec_tyme),
@@ -24,15 +24,16 @@ summary.hog_method <- function(method){
              Synthetic HO generation method employed: {method$hog_name}.
              
              \n\n Database summary:
-             \n\t\t number of features: {ncol(method$DB)-2}
-             \n\t\t total number of data points: {nrow(method$DB)}
-             \n\t\t total amount of syntetic data generated: {method$n_data_gen}
-              \n\t\t\t ...of of which hidden outliers: {nrow(method$ho_list)}
-             \n\t\t number of H1 outliers: {as.data.frame(ho_type) %>%
-              filter(ho_type == 'H1') %>%
+             \n
+             \t\t number of features: {ncol(method$DB)-2}
+             \t\t total number of data points: {nrow(method$DB)}
+             \t\t total amount of syntetic data generated: {method$n_data_gen}
+              \t\t\t ...of which hidden outliers: {nrow(method$ho_list)}
+             \t\t number of H1 outliers: {as.data.frame(method$ho_type) %>%
+              filter(V1 == 'H1') %>%
               count()}
-             \n\t\t number of H2 outliers: {as.data.frame(ho_type) %>%
-              filter(ho_type == 'H2') %>%
+             \t\t number of H2 outliers: {as.data.frame(method$ho_type) %>%
+              filter(V1 == 'H2') %>%
               count()}.
 
              \n\n Total execution time: {method$exec_time}."))

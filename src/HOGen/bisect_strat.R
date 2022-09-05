@@ -4,6 +4,7 @@ library(glue)
 library(car)
 library(dplyr)
 library(uniformly)
+library(tictoc)
 source('src/registry_extras/utils.R')
 source('src/ODM/inference_methods.R')
 source('src/registry_extras/classes.R')
@@ -84,28 +85,23 @@ f <- function(x,verb = F, h_index = F, method = "mahalanobis"){
     j = j + 1}
   
   if(sum(index[1:(2^(ncol(DB)-2)-2)]) > 0 && index[2^(ncol(DB)-2)-1] == 0){
-    result = 0}
-  else if(isTRUE(all.equal(index, h2))){
-    result = 0}
+    result = list(0,"H1")}
+  else if(isTRUE(all.equal(index, h2))){ 
+    result = list(0, 'H2')}
   else if(sum(index[1:(2^(ncol(DB)-2)-2)]) > 0 && index[2^(ncol(DB)-2)-1] == 1){
     if(verb==T){
-      print(glue('x Outside of bounds'))}; result = list(1, 'OB')}
-  else{if(verb==T){print(glue('x in the total acceptance area'))}; 
+      print(glue('x Outside of bounds'))}
+    result = list(1, 'OB')}
+  else{
+    if(verb==T){print(glue('x in the total acceptance area'))} 
     result = list(-1, 'IL')}
-  
-  if(h_index == T){ 
-    if(sum(index[1:(2^(ncol(DB)-2)-2)]) > 0 && index[2^(ncol(DB)-2)-1] == 0){
-    result = list(0,"H1")
-  }
-    if(isTRUE(all.equal(index, h2))){ result = list(0, 'H2')}
-  }
   
   return(result)
 }
 
 
 main <- function(B=100, method = "mahalanobis", seed = F,
-                 verb = T, dev_opt = T){
+                 verb = T, dev_opt = F){
   #' @title Main function for the bisect experiment
   #' 
   #' @description Given the number of data that you want to generate (in this 
@@ -134,12 +130,12 @@ main <- function(B=100, method = "mahalanobis", seed = F,
     write.table(seed, file = "seed/seed.txt", sep = " ")
     set.seed(seed)
   }
-  if(dev_opt == T){glue({red$italic$bold("The developer option has been activated. 
+  if(dev_opt == T){warning(glue("The developer option has been activated. 
                                 This means that the ODM environment will not 
                                 be deleted, and therefore some collusion might
                                 occur with following experiments. Poceed with
                                 caution
-                                ")})}
+                                "))}
   
   x_list = runif_on_sphere(n = B, d = ncol(DB) - 2, r = 1) #sample the 
                                                            #directional vectors
@@ -147,7 +143,7 @@ main <- function(B=100, method = "mahalanobis", seed = F,
   hidden_x_list = matrix(0, nrow = nrow(x_list), ncol = ncol(x_list))
   hidden_x_type = matrix(0, nrow = nrow(x_list), ncol = 1)
   
-  start_time = Sys.time()
+  tic()
   for (i in 1:nrow(x_list)){
     bisection_results = bisect(L=L, x = x_list[i,], verb = verb)
     hidden_c = bisection_results[[1]]
@@ -158,8 +154,8 @@ main <- function(B=100, method = "mahalanobis", seed = F,
       hidden_x_type[i,] = outlier_type
       }
   }
-  end_time = Sys.time()
-  exec_time = end_time - start_time
+  exec_time = toc()
+  exec_time = exec_time$callback_msg
   
   hidden_x_list = hidden_x_list[rowSums(hidden_x_list) != 0,]
   gen_result = hog_method(DB, B, method, "bisection", 
