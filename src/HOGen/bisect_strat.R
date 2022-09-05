@@ -10,7 +10,7 @@ source('src/ODM/inference_methods.R')
 source('src/registry_extras/classes.R')
 
 
-bisect <- function(L, x, iternum=1000, verb = T,...){
+bisect <- function(L, x, iternum=1000, method, verb = T,...){
   #' @title Bisection method implementation for function f
   #' 
   #' @description Performs the bisection algorithm over the function 
@@ -35,7 +35,7 @@ bisect <- function(L, x, iternum=1000, verb = T,...){
   for (i in 1:iternum){
     c = (b+a)/2
     
-    check_if_outlier = f(c*x + colMeans(DB[2:(ncol(DB) - 1)]))
+    check_if_outlier = f(c*x + colMeans(DB[2:(ncol(DB) - 1)]), method = method)
     outlier_indicator = check_if_outlier[[1]]
     outlier_type = check_if_outlier[[2]]
     
@@ -145,7 +145,7 @@ main <- function(B=100, method = "mahalanobis", seed = F,
   
   tic()
   for (i in 1:nrow(x_list)){
-    bisection_results = bisect(L=L, x = x_list[i,], verb = verb)
+    bisection_results = bisect(L=L, x = x_list[i,], method = method, verb = verb)
     hidden_c = bisection_results[[1]]
     outlier_type = bisection_results[[2]]
     

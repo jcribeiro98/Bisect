@@ -20,7 +20,7 @@ inference <- function(x,S, method = "mahalanobis",...){
     result = ODM_env[[glue("method{set_names(S)}")]](x)
   }
   
-  if(mehtod == "LOF"){
+  if(method == "LOF"){
     result = ODM_env[[glue("method{set_names(S)}")]](x,...)
   }
   

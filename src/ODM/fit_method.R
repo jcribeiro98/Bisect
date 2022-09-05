@@ -23,7 +23,6 @@ fit <- function(method, S,...){
   #Methods:
   
   if (method == "mahalanobis"){
-    
     S #Needed for fixing a bug regarding R lazy evaluation in function closures
     result = function(x){distmah(S,x) > critval(S,verb=F)}
   }
@@ -33,7 +32,7 @@ fit <- function(method, S,...){
     DB_new = DB
 
     result = function(x,...){
-      DB_new[nrow(DB) + 1,sS] = x
+      DB_new[nrow(DB) + 1,sS] = x[sS]
       scores = lof(DB_new[sS],...)
       crit_val = quantile(scores, .95)
       return(scores[nrow(DB) + 1] > crit_val)
