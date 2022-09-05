@@ -32,7 +32,7 @@ fit <- function(method, S,...){
     sS = set_subspace_grab(S)
     DB_new = DB
 
-    result = function(x){
+    result = function(x,...){
       DB_new[nrow(DB) + 1,sS] = x
       scores = lof(DB_new[sS],...)
       crit_val = quantile(scores, .95)
