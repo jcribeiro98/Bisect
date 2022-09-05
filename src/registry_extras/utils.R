@@ -7,12 +7,12 @@ DB_gen <- function(db){
 #' @title Formating of a database for the bisection method
 #' 
 #' @description The methods developed in this project utilizes an specific
-#' data.frame arquitecture to ease a lot of the calls needed during the 
+#' data.frame architecture to ease a lot of the calls needed during the 
 #' *bisect* method. We included a function to reshape any given matrix/df 
-#' into the desired arquitecture. The final df will consist of 
+#' into the desired architecture. The final df will consist of 
 #'            ~id |  y1 |  ... | yn | ~dM
 #' Where id is a vector of ids, y1...yn are a renaming of the numerical columns
-#' presented on the prior dataframe and dM is the Mahanalobis distance of all 
+#' presented on the prior dataframe and dM is the Mahalanobis distance of all 
 #' the data.
 #' 
 #' @note ~ -> Indicates that the df feature might change in further releases.
@@ -37,13 +37,16 @@ DB_gen <- function(db){
   }
   DB['id'] = 1:nrow(DB)
   
-  dM = mahalanobis(as.matrix(DB[2:(ncol(db) + 1)],header=T),colMeans(as.matrix(DB[2:(ncol(db) + 1)],header=T)),cov(as.matrix(DB[2:(ncol(db) + 1)],header=T)))
+  dM = mahalanobis(as.matrix(DB[2:(ncol(db) + 1)],header=T),
+                   colMeans(as.matrix(DB[2:(ncol(db) + 1)],header=T)),
+                   cov(as.matrix(DB[2:(ncol(db) + 1)],header=T)))
   DB[ncol(db)+2]=dM
   colnames(DB)[ncol(db)+2] = 'dM'
+  DB <<- DB
   return(DB)
 }
 
-critval <-function(S,verb = F){
+critval <- function(S,verb = F){
   #' @title Critical value given by a normal DB while using the MD. 
   #' 
   #' Arguments
@@ -54,6 +57,36 @@ critval <-function(S,verb = F){
   if (verb == T){
     print(glue('cutoff value on dM = {qchisq(0.95, length(S))} \n'))}
   return(qchisq(0.95, length(S)))}
+
+
+set_names <- function(s, sep = "_"){  
+  #' @title Names of a set
+  #' 
+  #' @description Given an array or list, the function obtains a character 
+  #' containing the name (as a character) of each element, separated by sep.
+  #' 
+  #' Arguments:
+  #' @param s : (array or list) Array whose names want to be fetched
+  #' @param sep : (character) Separator used in between the names (defaults to 
+  #'              "_")
+  
+  
+  index = as.vector(matrix(0,1,length(s)))
+  j = 1
+  for (i in s){index[j] = i; j = j + 1}
+  result = paste(as.character(index), collapse = sep)
+  return(result)
+}
+
+set_subspace_grab <- function(S){
+  sS = c(0)
+  j = 1
+  for (i in S){
+    sS[j] = glue('y{i}')
+    j = j + 1
+  }
+  return(sS)
+}
 
 
 distmah <- function(S,x){
@@ -67,12 +100,7 @@ distmah <- function(S,x){
   #'  @param S : (set) Set of indices which conforms the subspace.
   
   
-  sS = c(0)
-  j = 1
-  for (i in S){
-    sS[j] = glue('y{i}')
-    j = j + 1
-  }
+  sS = set_subspace_grab(S)
   x = as.data.frame(t(x))
 
   

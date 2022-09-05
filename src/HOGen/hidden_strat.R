@@ -2,7 +2,7 @@ library(sets)
 library(glue)
 library(car)
 library(dplyr)
-
+source("src/HOGen/bisect_strat.R")
 
 hidden_sample = function(B=100, 
                          eps, 
@@ -52,7 +52,9 @@ hidden_sample = function(B=100,
 main_hidden <-function(B=B, 
                        eps = eps, 
                        l = min(DB[2:(ncol(DB)-1)]), 
-                       u = max(DB[2:(ncol(DB)-1)])){
+                       u = max(DB[2:(ncol(DB)-1)]),
+                       method = "mahalanobis",
+                       dev_opt = F){
   #' @title Main function for the hidden algorithm
   #' 
   #' @description Performs the hidden sampling methods as described in Georg's 
@@ -68,10 +70,16 @@ main_hidden <-function(B=B,
                          u = max(DB[2:(ncol(DB)-1)]))
   
   hidden_x_list = matrix(0, nrow = nrow(x_list), ncol = ncol(x_list))
+  hidden_x_type = matrix(0, nrow = nrow(x_list), ncol = 1)
+  tic()
   for (i in 1:nrow(x_list)){
-    if(f(x_list[i,]) == 0){ 
-      hidden_x_list[i,] = x_list[i,] }
+    check_if_outlier = f(x_list[i,])
+    if(check_if_outlier[[1]] == 0){ 
+      hidden_x_list[i,] = x_list[i,] 
+      hidden_x_type[i,] = check_if_outlier[[2]]}
   }
+  exec_time = toc()
+  exec_time = exec_time$callback_msg
   
   name= matrix(0,nrow = 1, ncol = ncol(hidden_x_list)) 
   for (i in 1:ncol(hidden_x_list)){
@@ -84,6 +92,10 @@ main_hidden <-function(B=B,
                                 #results.
   
   hidden_x_list = hidden_x_list[rowSums(hidden_x_list) != 0,]
+  gen_result = hog_method(DB, B, method, "Hidden", 
+                          ODM_env, hidden_x_list, hidden_x_type, exec_time)
   
-  return(hidden_x_list)
+  if(dev_opt == F){
+    rm(ODM_env, envir = globalenv())}
+  return(gen_result)
 }

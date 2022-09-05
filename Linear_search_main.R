@@ -5,8 +5,8 @@ library(dplyr)
 library(hrbrthemes)
 library(ggplot2)
 library(latex2exp)
-source('src/bisect_strat.R')
-source('src/hidden_strat.R')
+source('src/HOGen/bisect_strat.R')
+source('src/HOGen/hidden_strat.R')
 
 #------------------------------------------------------------------------------#
 #                         n-dimensional Linear Search                          #
@@ -17,7 +17,7 @@ n = 3
 nsamples = 1000
 
 
-norMatrix = matrix(0,nrow = nsamples, ncol = 3)
+norMatrix = matrix(0,nrow = nsamples, ncol = n)
 for (i in 1:n) {norMatrix[,i] = rnorm(nsamples, runif(1,min=3,max = 10), 
                                       runif(1,min = 2, max=5))}
 
