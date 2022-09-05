@@ -46,7 +46,7 @@ DB_gen <- function(db){
   return(DB)
 }
 
-critval <-function(S,verb = F){
+critval <- function(S,verb = F){
   #' @title Critical value given by a normal DB while using the MD. 
   #' 
   #' Arguments
@@ -59,7 +59,7 @@ critval <-function(S,verb = F){
   return(qchisq(0.95, length(S)))}
 
 
-set_names = function(s, sep = "_"){  
+set_names <- function(s, sep = "_"){  
   #' @title Names of a set
   #' 
   #' @description Given an array or list, the function obtains a character 
@@ -78,6 +78,16 @@ set_names = function(s, sep = "_"){
   return(result)
 }
 
+set_subspace_grab <- function(S){
+  sS = c(0)
+  j = 1
+  for (i in S){
+    sS[j] = glue('y{i}')
+    j = j + 1
+  }
+  return(sS)
+}
+
 
 distmah <- function(S,x){
   #' @title Calculation of the Mah. distance.
@@ -90,12 +100,7 @@ distmah <- function(S,x){
   #'  @param S : (set) Set of indices which conforms the subspace.
   
   
-  sS = c(0)
-  j = 1
-  for (i in S){
-    sS[j] = glue('y{i}')
-    j = j + 1
-  }
+  sS = set_subspace_grab(S)
   x = as.data.frame(t(x))
 
   
