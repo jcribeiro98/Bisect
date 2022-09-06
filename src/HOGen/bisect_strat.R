@@ -35,7 +35,8 @@ bisect <- function(L, x, iternum=1000, method, verb = T,...){
   for (i in 1:iternum){
     c = (b+a)/2
     
-    check_if_outlier = f(c*x + colMeans(DB[2:(ncol(DB) - 1)]), method = method)
+    check_if_outlier = f(c*x + colMeans(DB[2:(ncol(DB) - 1)]), 
+                         method = method, verb = verb)
     outlier_indicator = check_if_outlier[[1]]
     outlier_type = check_if_outlier[[2]]
     
