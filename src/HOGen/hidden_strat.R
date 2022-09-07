@@ -75,6 +75,7 @@ main_hidden <-function(B=B,
   for (i in 1:nrow(x_list)){
     check_if_outlier = f(x_list[i,])
     if(check_if_outlier[[1]] == 0){ 
+      print(glue('x in {check_if_outlier[[2]]}'))
       hidden_x_list[i,] = x_list[i,] 
       hidden_x_type[i,] = check_if_outlier[[2]]}
   }
