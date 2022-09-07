@@ -5,3 +5,4 @@ seed/
 *.Rproj
 .Rhistory
 experiments/
+databases/
