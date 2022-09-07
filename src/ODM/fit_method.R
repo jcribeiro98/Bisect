@@ -18,7 +18,7 @@ fit_all_methods <- function(method,...){
   for (s in set_power(as.numeric(1:(ncol(DB)-2)))){
     if (set_is_empty(s) != T){
       
-      glue("Fitting in the feature space : {set_names(s, sep = ' & ')}")
+      print(glue("Fitting in the feature space : {set_names(s, sep = ' & ')}"))
       ODM_env[[glue("method{set_names(s)}")]] = fit(method, s,...)
     }
   }
