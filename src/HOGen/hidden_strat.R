@@ -4,7 +4,7 @@ library(car)
 library(dplyr)
 source("src/HOGen/bisect_strat.R")
 
-hidden_sample = function(B=100, 
+hidden_sample = function(gen_points = 100, 
                          eps, 
                          l = min(DB[2:(ncol(DB)-1)]), 
                          u = max(DB[2:(ncol(DB)-1)])){
@@ -23,7 +23,7 @@ hidden_sample = function(B=100,
   #'            of the data base)
   
   
-  Y = DB[sample(nrow(DB), B, replace = T),2:(ncol(DB)-1)]
+  Y = DB[sample(nrow(DB), gen_points, replace = T),2:(ncol(DB)-1)]
   x = matrix(nrow = nrow(Y), ncol = ncol(Y))
   name= matrix(0,nrow = 1, ncol = ncol(x))
   for (i in 1:ncol(x)){
@@ -49,7 +49,7 @@ hidden_sample = function(B=100,
 }
 
 
-main_hidden <-function(B=B, 
+main_hidden <-function(gen_points = 100, 
                        eps = eps, 
                        l = min(DB[2:(ncol(DB)-1)]), 
                        u = max(DB[2:(ncol(DB)-1)]),
@@ -66,7 +66,9 @@ main_hidden <-function(B=B,
   #'         -Identical to *hidden_sample*-
   
   
-  x_list = hidden_sample(B=B, eps = eps, l = min(DB[2:(ncol(DB)-1)]), 
+  x_list = hidden_sample(gen_points = gen_points, 
+                         eps = eps, 
+                         l = min(DB[2:(ncol(DB)-1)]), 
                          u = max(DB[2:(ncol(DB)-1)]))
   
   hidden_x_list = matrix(0, nrow = nrow(x_list), ncol = ncol(x_list))
@@ -93,7 +95,7 @@ main_hidden <-function(B=B,
                                 #results.
   
   hidden_x_list = hidden_x_list[rowSums(hidden_x_list) != 0,]
-  gen_result = hog_method(DB, B, method, "Hidden", 
+  gen_result = hog_method(DB, gen_points, method, "Hidden", 
                           ODM_env, hidden_x_list, hidden_x_type, exec_time)
   
   if(dev_opt == F){
