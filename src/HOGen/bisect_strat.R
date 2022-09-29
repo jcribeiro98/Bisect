@@ -8,10 +8,11 @@ library(tictoc)
 source("src/registry_extras/utils.R")
 source("src/ODM/inference_methods.R")
 source("src/registry_extras/classes.R")
-source("src/HOGen/otlier_check.R")
+source("src/HOGen/outlier_check.R")
 
 
-bisect <- function(l, x, iternum = 1000, method, verb = TRUE, ...) {
+bisect <- function(l, x, iternum = 1000, method, 
+                   verb = TRUE, check_version = "fast",...) {
   #' @title Bisection method implementation for function f
   #'
   #' @description Performs the bisection algorithm over the function
@@ -36,10 +37,16 @@ bisect <- function(l, x, iternum = 1000, method, verb = TRUE, ...) {
   b <- l
   for (i in 1:iternum) {
     c <- (b + a) / 2
-
-    check_if_outlier <- outlier_check(c * x + colMeans(DB[2:(ncol(DB) - 1)]),
-      method = method, verb = verb
-    )
+    
+    if (check_version == "fast"){
+      check_if_outlier <- outlier_check_fast(c * x + 
+                                               colMeans(DB[2:(ncol(DB) - 1)]),
+                                        method = method, verb = verb)
+    }else {
+      check_if_outlier <- outlier_check(c * x + 
+                                               colMeans(DB[2:(ncol(DB) - 1)]),
+                                        method = method, verb = verb)
+    }
     outlier_indicator <- check_if_outlier[[1]]
     outlier_type <- check_if_outlier[[2]]
 
@@ -50,7 +57,7 @@ bisect <- function(l, x, iternum = 1000, method, verb = TRUE, ...) {
     else if (outlier_indicator < 0) {
       a <- c
     } else {
-      print(glue("x in {outlier_type}"))
+      print(glue("x in {outlier_type} in {i} iterations"))
       break
     }
   }
@@ -58,10 +65,8 @@ bisect <- function(l, x, iternum = 1000, method, verb = TRUE, ...) {
 }
 
 
-
-
 main <- function(gen_points = 100, method = "mahalanobis", seed = FALSE,
-                 verb = FALSE, dev_opt = FALSE, ...) {
+                 verb = FALSE, dev_opt = FALSE, check_version = "fast",...) {
   #' @title Main function for the bisect experiment
   #'
   #' @description Given the number of data that you want to generate (in this
@@ -99,17 +104,15 @@ main <- function(gen_points = 100, method = "mahalanobis", seed = FALSE,
                                 "))
   }
 
-  x_list <- runif_on_sphere(n = gen_points, d = ncol(DB) - 2, r = 1) # sample the
-  # directional vectors
+  x_list <- runif_on_sphere(n = gen_points, d = ncol(DB) - 2, r = 1) 
   l <- max(sqrt(rowSums(DB[2:(ncol(DB) - 1)]^2)))
   hidden_x_list <- matrix(0, nrow = nrow(x_list), ncol = ncol(x_list))
   hidden_x_type <- matrix(0, nrow = nrow(x_list), ncol = 1)
 
   tic()
   for (i in 1:nrow(x_list)) {
-    bisection_results <- bisect(
-      l = l, x = x_list[i, ],
-      method = method, verb = verb
+    bisection_results <- bisect( l = l, x = x_list[i, ], method = method, 
+                                 verb = verb, check_version = check_version
     )
     hidden_c <- bisection_results[[1]]
     outlier_type <- bisection_results[[2]]
