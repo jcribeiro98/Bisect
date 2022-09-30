@@ -1,8 +1,8 @@
 library(sets)
 library(glue)
-library(car)
-library(dplyr)
-source("src/HOGen/bisect_strat.R")
+source("src/ODM/inference_methods.R")
+source("src/registry_extras/classes.R")
+source("src/HOGen/outlier_check.R")
 
 hidden_sample = function(gen_points = 100, 
                          eps, 

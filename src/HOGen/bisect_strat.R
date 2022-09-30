@@ -1,8 +1,5 @@
 library(sets)
-library(crayon)
 library(glue)
-library(car)
-library(dplyr)
 library(uniformly)
 library(tictoc)
 source("src/registry_extras/utils.R")
