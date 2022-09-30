@@ -1,5 +1,13 @@
+library(sets)
+library(crayon)
+library(glue)
+library(car)
+library(dplyr)
+library(uniformly)
+library(tictoc)
+source("src/HOGen/outlier_check.R")
 source("src/ODM/inference_methods.R")
-source("src/HOGen/bisect_strat.R")
+
 
 
 interval_check <- function(l, method, x, parts = 5, ...) {
@@ -47,7 +55,8 @@ interval_check <- function(l, method, x, parts = 5, ...) {
 }
 
 
-multi_bisect <- function(x, l, iternum = 1000, method, verb = T, ...) {
+multi_bisect <- function(x, l, iternum = 1000, 
+                         method, verb = T, check_version, ...) {
   #' @title Multi Bisection algorithm function
   #'
   #' @description Performs the multi bisection algorithm to any given
@@ -72,10 +81,13 @@ multi_bisect <- function(x, l, iternum = 1000, method, verb = T, ...) {
   b <- interval[2]
   for (i in 1:iternum) {
     c <- (b + a) / 2
-
-    check_if_outlier <- f(c * x + colMeans(DB[2:(ncol(DB) - 1)]),
-      method = method, verb = verb, ...
-    )
+    if (check_version == "fast"){
+      check_if_outlier <- outlier_check_fast(c * x + colMeans(
+        DB[2:(ncol(DB) - 1)]),method = method, verb = verb, ...)
+    }else{
+      check_if_outlier <- outlier_check(c * x + colMeans(DB[2:(ncol(DB) - 1)]),
+                                        method = method, verb = verb, ...)
+      }
     outlier_indicator <- check_if_outlier[[1]]
     outlier_type <- check_if_outlier[[2]]
 
@@ -93,8 +105,9 @@ multi_bisect <- function(x, l, iternum = 1000, method, verb = T, ...) {
 }
 
 
-main_multibisect <- function(gen_points = 100, method = "mahalanobis", seed = F,
-                             verb = T, dev_opt = F, ...) {
+main_multibisect <- function(gen_points = 100, method = "mahalanobis", 
+                             seed = FALSE, verb = T, check_version = "fast", 
+                             dev_opt = F, ...) {
   #' @title Multi Bisection main function
   #'
   #' @description Main function of the Multi bisection algorithm. It generates
@@ -140,7 +153,7 @@ main_multibisect <- function(gen_points = 100, method = "mahalanobis", seed = F,
   for (i in 1:nrow(x_list)) {
     bisection_results <- multi_bisect(
       l = l, x = x_list[i, ],
-      method = method, verb = verb
+      method = method, verb = verb, check_version = check_version
     )
     hidden_c <- bisection_results[[1]]
     outlier_type <- bisection_results[[2]]
