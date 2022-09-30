@@ -1,16 +1,15 @@
 library(sets)
-library(crayon)
 library(glue)
-library(car)
-library(dplyr)
 library(uniformly)
 library(tictoc)
 source("src/registry_extras/utils.R")
 source("src/ODM/inference_methods.R")
 source("src/registry_extras/classes.R")
+source("src/HOGen/outlier_check.R")
 
 
-bisect <- function(l, x, iternum = 1000, method, verb = TRUE, ...) {
+bisect <- function(l, x, iternum = 1000, method, 
+                   verb = TRUE, check_version = "fast",...) {
   #' @title Bisection method implementation for function f
   #'
   #' @description Performs the bisection algorithm over the function
@@ -35,10 +34,16 @@ bisect <- function(l, x, iternum = 1000, method, verb = TRUE, ...) {
   b <- l
   for (i in 1:iternum) {
     c <- (b + a) / 2
-
-    check_if_outlier <- f(c * x + colMeans(DB[2:(ncol(DB) - 1)]),
-      method = method, verb = verb
-    )
+    
+    if (check_version == "fast"){
+      check_if_outlier <- outlier_check_fast(c * x + 
+                                               colMeans(DB[2:(ncol(DB) - 1)]),
+                                        method = method, verb = verb)
+    }else {
+      check_if_outlier <- outlier_check(c * x + 
+                                               colMeans(DB[2:(ncol(DB) - 1)]),
+                                        method = method, verb = verb)
+    }
     outlier_indicator <- check_if_outlier[[1]]
     outlier_type <- check_if_outlier[[2]]
 
@@ -49,7 +54,7 @@ bisect <- function(l, x, iternum = 1000, method, verb = TRUE, ...) {
     else if (outlier_indicator < 0) {
       a <- c
     } else {
-      print(glue("x in {outlier_type}"))
+      print(glue("x in {outlier_type} in {i} iterations"))
       break
     }
   }
@@ -57,68 +62,8 @@ bisect <- function(l, x, iternum = 1000, method, verb = TRUE, ...) {
 }
 
 
-f <- function(x, verb = F, method = "mahalanobis", ...) {
-  #' @title Bisection main function
-  #'
-  #' @description Defines the function that is going to be used in the bisection
-  #' rule during the main execution of the algorithm. The function itself is
-  #' really simple, it checks if a point x is an outlier in all of the subspaces
-  #' of the total space. f is defined as
-  #'
-  #'        1, if x is outside of bounds,
-  #' f(x)= -1, if x is in the join acceptance area,
-  #'        0, if x is in H1 U H2.
-  #'
-  #' @note The function only works currently with mahanalobis distances as an
-  #' outlier detection method (will probably remain like that in this file).
-  #'
-  #' Arguments:
-  #' @param x :(array) Point to check
-  #' @param verb : (Logical) Value controlling if f should be verbose or not (
-  #'               defaults to FALSE)
-
-
-
-  h2 <- matrix(0, ncol = 2^(ncol(DB) - 2) - 1, nrow = 1)
-  h2[2^(ncol(DB) - 2) - 1] <- 1
-
-  supS <- set_power(as.numeric(1:(ncol(DB) - 2)))
-  index <- matrix(0, ncol = 2^(ncol(DB) - 2) - 1, nrow = 1)
-
-  j <- 0
-  for (S in supS) {
-    if (set_is_empty(S) != T) {
-      if (inference(x, S, method, ...)) {
-        index[j] <- 1
-      }
-    }
-    j <- j + 1
-  }
-
-  if (sum(index[1:(2^(ncol(DB) - 2) - 2)]) > 0 &&
-    index[2^(ncol(DB) - 2) - 1] == 0) {
-    result <- list(0, "H1")
-  } else if (isTRUE(all.equal(index, h2))) {
-    result <- list(0, "H2")
-  } else if (sum(index[1:(2^(ncol(DB) - 2) - 2)]) > 0 &&
-    index[2^(ncol(DB) - 2) - 1] == 1) {
-    if (verb == T) {
-      print(glue("x Outside of bounds"))
-    }
-    result <- list(1, "OB")
-  } else {
-    if (verb == T) {
-      print(glue("x in the total acceptance area"))
-    }
-    result <- list(-1, "IL")
-  }
-
-  return(result)
-}
-
-
 main <- function(gen_points = 100, method = "mahalanobis", seed = FALSE,
-                 verb = FALSE, dev_opt = FALSE, ...) {
+                 verb = FALSE, dev_opt = FALSE, check_version = "fast",...) {
   #' @title Main function for the bisect experiment
   #'
   #' @description Given the number of data that you want to generate (in this
@@ -156,17 +101,15 @@ main <- function(gen_points = 100, method = "mahalanobis", seed = FALSE,
                                 "))
   }
 
-  x_list <- runif_on_sphere(n = gen_points, d = ncol(DB) - 2, r = 1) # sample the
-  # directional vectors
+  x_list <- runif_on_sphere(n = gen_points, d = ncol(DB) - 2, r = 1) 
   l <- max(sqrt(rowSums(DB[2:(ncol(DB) - 1)]^2)))
   hidden_x_list <- matrix(0, nrow = nrow(x_list), ncol = ncol(x_list))
   hidden_x_type <- matrix(0, nrow = nrow(x_list), ncol = 1)
 
   tic()
   for (i in 1:nrow(x_list)) {
-    bisection_results <- bisect(
-      l = l, x = x_list[i, ],
-      method = method, verb = verb
+    bisection_results <- bisect( l = l, x = x_list[i, ], method = method, 
+                                 verb = verb, check_version = check_version
     )
     hidden_c <- bisection_results[[1]]
     outlier_type <- bisection_results[[2]]

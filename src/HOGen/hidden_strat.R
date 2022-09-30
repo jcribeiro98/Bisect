@@ -1,8 +1,8 @@
 library(sets)
 library(glue)
-library(car)
-library(dplyr)
-source("src/HOGen/bisect_strat.R")
+source("src/ODM/inference_methods.R")
+source("src/registry_extras/classes.R")
+source("src/HOGen/outlier_check.R")
 
 hidden_sample = function(gen_points = 100, 
                          eps, 
@@ -54,7 +54,8 @@ main_hidden <-function(gen_points = 100,
                        l = min(DB[2:(ncol(DB)-1)]), 
                        u = max(DB[2:(ncol(DB)-1)]),
                        method = "mahalanobis",
-                       dev_opt = F){
+                       check_version = "fast",
+                       dev_opt = FALSE){
   #' @title Main function for the hidden algorithm
   #' 
   #' @description Performs the hidden sampling methods as described in Georg's 
@@ -75,7 +76,11 @@ main_hidden <-function(gen_points = 100,
   hidden_x_type = matrix(0, nrow = nrow(x_list), ncol = 1)
   tic()
   for (i in 1:nrow(x_list)){
-    check_if_outlier = f(x_list[i,])
+    if (check_version == "fast"){
+      check_if_outlier = outlier_check_fast(x_list[i,])
+    }else{
+      check_if_outlier = outlier_check(x_list[i,])
+    }
     if(check_if_outlier[[1]] == 0){ 
       print(glue('x in {check_if_outlier[[2]]}'))
       hidden_x_list[i,] = x_list[i,] 
