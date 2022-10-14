@@ -104,7 +104,7 @@ multi_bisect <- function(x, l, iternum = 1000,
 
 main_multibisect <- function(gen_points = 100, method = "mahalanobis", 
                              seed = FALSE, verb = T, check_version = "fast", 
-                             dev_opt = F, ...) {
+                             dev_opt = F, num_workers = detectCores()/2, ...) {
   #' @title Multi Bisection main function
   #'
   #' @description Main function of the Multi bisection algorithm. It generates
@@ -140,30 +140,39 @@ main_multibisect <- function(gen_points = 100, method = "mahalanobis",
                                 caution
                                 "))
   }
-
+  if(exists("ODM_env", envir = globalenv()) != T){
+    fit_all_methods(method,...)
+  }
+  
   x_list <- runif_on_sphere(n = gen_points, d = ncol(DB) - 2, r = 1)
   l <- max(sqrt(rowSums(DB[2:(ncol(DB) - 1)]^2)))
-  hidden_x_list <- matrix(0, nrow = nrow(x_list), ncol = ncol(x_list))
-  hidden_x_type <- matrix(0, nrow = nrow(x_list), ncol = 1)
-
+  registerDoParallel(num_workers)
+  
   tic()
-  for (i in 1:nrow(x_list)) {
-    bisection_results <- multi_bisect(
-      l = l, x = x_list[i, ],
-      method = method, verb = verb, check_version = check_version
-    )
+  bisection_results <- foreach (i =  1:nrow(x_list), .combine = rbind) %dopar% {
+    bisection_results <- multi_bisect( l = l, x = x_list[i, ], method = method, 
+                                 verb = verb, check_version = check_version)
     hidden_c <- bisection_results[[1]]
     outlier_type <- bisection_results[[2]]
-
+    
     if (outlier_type %in% c("H1", "H2")) {
-      hidden_x_list[i, ] <- hidden_c * (x_list[i, ]) +
+      result_point <- hidden_c * (x_list[i, ]) +
         colMeans(DB[2:(ncol(DB) - 1)])
-      hidden_x_type[i, ] <- outlier_type
-    }
+      result_point[8] = outlier_type #'doPar has a weird way of dealing with 
+                                     #'the outcome of the loops, so we need 
+                                     #'to handle the results this way
+    }else{result_point = matrix(0,1,ncol(DB)-1)}
+    result_point
   }
   exec_time <- toc()
   exec_time <- exec_time$callback_msg
-
+  stopImplicitCluster()
+  
+  hidden_x_list <- matrix(as.numeric(bisection_results[,1:ncol(x_list)]), 
+                          nrow(bisection_results)) #' We added a char into a 
+                                                   #' numeric array, so 
+                                                   #' everything is a char now
+  hidden_x_type <- as.matrix(bisection_results[,(ncol(x_list)+1)])
   hidden_x_list <- hidden_x_list[rowSums(hidden_x_list) != 0, ]
   gen_result <- hog_method(
     DB, gen_points, method, "multi_bisection",
