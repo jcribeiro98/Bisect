@@ -2,6 +2,8 @@ library(sets)
 library(glue)
 library(uniformly)
 library(tictoc)
+library(foreach)
+library(doParallel)
 source("src/registry_extras/utils.R")
 source("src/ODM/inference_methods.R")
 source("src/registry_extras/classes.R")
@@ -61,9 +63,23 @@ bisect <- function(l, x, iternum = 1000, method,
   return(list(c, outlier_type))
 }
 
+grab_bisect_results <- function(i){
+  bisection_results <- bisect( l = l, x = x_list[i, ], method = method, 
+                               verb = verb, check_version = check_version
+  )
+  hidden_c <- bisection_results[[1]]
+  outlier_type <- bisection_results[[2]]
+  
+  if (outlier_type %in% c("H1", "H2")) {
+    hidden_x_list[i, ] <<- hidden_c * (x_list[i, ]) +
+      colMeans(DB[2:(ncol(DB) - 1)])
+    hidden_x_type[i, ] <<- outlier_type
+  }
+}
 
 main <- function(gen_points = 100, method = "mahalanobis", seed = FALSE,
-                 verb = FALSE, dev_opt = FALSE, check_version = "fast",...) {
+                 verb = FALSE, dev_opt = FALSE, check_version = "fast",
+                 num_workers = detectCores()/2,...) {
   #' @title Main function for the bisect experiment
   #'
   #' @description Given the number of data that you want to generate (in this
@@ -100,14 +116,17 @@ main <- function(gen_points = 100, method = "mahalanobis", seed = FALSE,
                                 caution
                                 "))
   }
+  if(exists("ODM_env", envir = globalenv()) != T){
+    fit_all_methods(method,...)
+  }
 
   x_list <- runif_on_sphere(n = gen_points, d = ncol(DB) - 2, r = 1) 
   l <- max(sqrt(rowSums(DB[2:(ncol(DB) - 1)]^2)))
-  hidden_x_list <- matrix(0, nrow = nrow(x_list), ncol = ncol(x_list))
-  hidden_x_type <- matrix(0, nrow = nrow(x_list), ncol = 1)
-
+  
+  registerDoParallel(num_workers)
+  
   tic()
-  for (i in 1:nrow(x_list)) {
+  bisection_results <- foreach (i =  1:nrow(x_list), .combine = rbind) %dopar% {
     bisection_results <- bisect( l = l, x = x_list[i, ], method = method, 
                                  verb = verb, check_version = check_version
     )
@@ -115,14 +134,23 @@ main <- function(gen_points = 100, method = "mahalanobis", seed = FALSE,
     outlier_type <- bisection_results[[2]]
 
     if (outlier_type %in% c("H1", "H2")) {
-      hidden_x_list[i, ] <- hidden_c * (x_list[i, ]) +
+      result_point <- hidden_c * (x_list[i, ]) +
         colMeans(DB[2:(ncol(DB) - 1)])
-      hidden_x_type[i, ] <- outlier_type
-    }
+      result_point[8] = outlier_type #'doPar has a weird way of dealing with 
+                                     #'the outcome of the loops, so we need 
+                                     #'to handle the results this way
+    }else{result_point = matrix(0,1,ncol(DB)-1)}
+    result_point
   }
   exec_time <- toc()
   exec_time <- exec_time$callback_msg
-
+  stopImplicitCluster()
+  
+  hidden_x_list <- matrix(as.numeric(bisection_results[,1:ncol(x_list)]), 
+                          nrow(bisection_results)) #' We added a char into a 
+                                                   #' numeric array, so 
+                                                   #' everything is a char now
+  hidden_x_type <- as.matrix(bisection_results[,(ncol(x_list)+1)])
   hidden_x_list <- hidden_x_list[rowSums(hidden_x_list) != 0, ]
   gen_result <- hog_method(
     DB, gen_points, method, "bisection",
