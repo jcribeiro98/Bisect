@@ -48,12 +48,21 @@ interval_check <- function(l, method, x, parts = 5, ...) {
     }
     previous <- check[i]
   }
+  if(length(interval) == 0){
+    interval <- append(interval, list(list(
+      c(
+        segmentation_points[1],
+        segmentation_points[length(check)]
+      ),
+      c(check[i - 1], check[i])
+    )))
+  }
   return(interval)
 }
 
 
 multi_bisect <- function(x, l, iternum = 1000, 
-                         method, verb = T, check_version, ...) {
+                         method, verb = F, check_version, ...) {
   #' @title Multi Bisection algorithm function
   #'
   #' @description Performs the multi bisection algorithm to any given
@@ -90,6 +99,7 @@ multi_bisect <- function(x, l, iternum = 1000,
 
     if (outlier_indicator == 0) {
       print(glue("x in {outlier_type}"))
+      return(list(c, outlier_type))
       break
     }
     if (outlier_indicator == interval_indicator[2]) {
@@ -103,7 +113,7 @@ multi_bisect <- function(x, l, iternum = 1000,
 
 
 main_multibisect <- function(gen_points = 100, method = "mahalanobis", 
-                             seed = FALSE, verb = T, check_version = "fast", 
+                             seed = FALSE, verb = F, check_version = "fast", 
                              dev_opt = F, num_workers = detectCores()/2, ...) {
   #' @title Multi Bisection main function
   #'
@@ -158,9 +168,10 @@ main_multibisect <- function(gen_points = 100, method = "mahalanobis",
     if (outlier_type %in% c("H1", "H2")) {
       result_point <- hidden_c * (x_list[i, ]) +
         colMeans(DB[2:(ncol(DB) - 1)])
-      result_point[8] = outlier_type #'doPar has a weird way of dealing with 
-                                     #'the outcome of the loops, so we need 
-                                     #'to handle the results this way
+      result_point[length(result_point) + 1] = outlier_type 
+      #'doPar has a weird way of dealing with 
+      #'the outcome of the loops, so we need 
+      #'to handle the results this way
     }else{result_point = matrix(0,1,ncol(DB)-1)}
     result_point
   }
