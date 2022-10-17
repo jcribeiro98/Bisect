@@ -16,7 +16,7 @@ inference <- function(x,S, method = "mahalanobis",...){
   #' the method in all of the possible subspaces. 
   #' 
   #' Arguments:
-  #' @param x: Value to infere
+  #' @param x: Value to infer
   #' @param S: Subspace to where perform the inferece
   #' @param method: ODM
   #' @param ...: Params passed to some ODMs.

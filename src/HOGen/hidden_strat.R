@@ -55,7 +55,8 @@ main_hidden <-function(gen_points = 100,
                        u = max(DB[2:(ncol(DB)-1)]),
                        method = "mahalanobis",
                        check_version = "fast",
-                       dev_opt = FALSE){
+                       num_workers = detectCores()/2,
+                       dev_opt = FALSE,...){
   #' @title Main function for the hidden algorithm
   #' 
   #' @description Performs the hidden sampling methods as described in Georg's 
@@ -65,8 +66,10 @@ main_hidden <-function(gen_points = 100,
   #' 
   #' Arguments:
   #'         -Identical to *hidden_sample*-
-  
-  
+  if(exists("ODM_env", envir = globalenv()) != T){
+    fit_all_methods(method,...)
+  }
+  tic()
   x_list = hidden_sample(gen_points = gen_points, 
                          eps = eps, 
                          l = min(DB[2:(ncol(DB)-1)]), 
@@ -74,8 +77,11 @@ main_hidden <-function(gen_points = 100,
   
   hidden_x_list = matrix(0, nrow = nrow(x_list), ncol = ncol(x_list))
   hidden_x_type = matrix(0, nrow = nrow(x_list), ncol = 1)
-  tic()
-  for (i in 1:nrow(x_list)){
+  
+  registerDoParallel(num_workers)
+  
+  
+  hidden_results <- foreach (i = 1:nrow(x_list), .combine = rbind) %dopar% {
     if (check_version == "fast"){
       check_if_outlier = outlier_check_fast(x_list[i,])
     }else{
@@ -83,12 +89,21 @@ main_hidden <-function(gen_points = 100,
     }
     if(check_if_outlier[[1]] == 0){ 
       print(glue('x in {check_if_outlier[[2]]}'))
-      hidden_x_list[i,] = x_list[i,] 
-      hidden_x_type[i,] = check_if_outlier[[2]]}
+      result_point = x_list[i,] 
+      result_point[length(result_point) + 1] = check_if_outlier[[2]]
+    }else{
+        result_point = matrix(0,1,ncol(x_list) + 1)}
+      result_point  
   }
   exec_time = toc()
   exec_time = exec_time$callback_msg
+  stopImplicitCluster()
   
+  hidden_x_list <- matrix(as.numeric(hidden_results[,1:ncol(x_list)]), 
+                          nrow(hidden_results)) #' We added a char into a 
+                                                   #' numeric array, so 
+                                                   #' everything is a char now
+  hidden_x_type <- as.matrix(hidden_results[,(ncol(x_list)+1)])
   name= matrix(0,nrow = 1, ncol = ncol(hidden_x_list)) 
   for (i in 1:ncol(hidden_x_list)){
     name[i] = glue('y{i}')
