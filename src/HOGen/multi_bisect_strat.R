@@ -149,7 +149,7 @@ main_multibisect <- function(gen_points = 100, method = "mahalanobis",
   registerDoParallel(num_workers)
   
   tic()
-  bisection_results <- foreach (i =  1:nrow(x_list), .combine = rbind) %dopar% {
+  bisection_results <- foreach (i = 1:nrow(x_list), .combine = rbind) %dopar% {
     bisection_results <- multi_bisect( l = l, x = x_list[i, ], method = method, 
                                  verb = verb, check_version = check_version)
     hidden_c <- bisection_results[[1]]
