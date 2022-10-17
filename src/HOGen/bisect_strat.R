@@ -136,7 +136,7 @@ main <- function(gen_points = 100, method = "mahalanobis", seed = FALSE,
     if (outlier_type %in% c("H1", "H2")) {
       result_point <- hidden_c * (x_list[i, ]) +
         colMeans(DB[2:(ncol(DB) - 1)])
-      result_point[length(x_list) + 1] = outlier_type #'doPar has a weird way of dealing with 
+      result_point[length(result_point) + 1] = outlier_type #'doPar has a weird way of dealing with 
                                      #'the outcome of the loops, so we need 
                                      #'to handle the results this way
     }else{result_point = matrix(0,1,ncol(DB)-1)}
