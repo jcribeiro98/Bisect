@@ -2,11 +2,11 @@ library(crayon)
 
 
 hog_method <- function(DB, B ,od_name, hog_name, 
-                       ODM_env, ho_list, ho_type, exec_tyme){
+                       ODM_env, ho_list, ho_type, exec_tyme, directions = NA){
   structure(list(DB, B ,od_name, hog_name,
-                 ODM_env, ho_list, ho_type, exec_tyme),
+                 ODM_env, ho_list, ho_type, exec_tyme, directions),
             names = c("DB", "n_data_gen" ,"odm_name", "hog_name",
-                      "ODM_env", "ho_list", "ho_type", "exec_time"),
+                      "ODM_env", "ho_list", "ho_type", "exec_time", "directions"),
             class = "hog_method")
 }
 

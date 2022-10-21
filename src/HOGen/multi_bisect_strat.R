@@ -187,7 +187,7 @@ main_multibisect <- function(gen_points = 100, method = "mahalanobis",
   hidden_x_list <- hidden_x_list[rowSums(hidden_x_list) != 0, ]
   gen_result <- hog_method(
     DB, gen_points, method, "multi_bisection",
-    ODM_env, hidden_x_list, hidden_x_type, exec_time
+    ODM_env, hidden_x_list, hidden_x_type, exec_time, x_list
   )
 
   if (dev_opt == F) {

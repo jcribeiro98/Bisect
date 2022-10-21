@@ -154,7 +154,7 @@ main <- function(gen_points = 100, method = "mahalanobis", seed = FALSE,
   hidden_x_list <- hidden_x_list[rowSums(hidden_x_list) != 0, ]
   gen_result <- hog_method(
     DB, gen_points, method, "bisection",
-    ODM_env, hidden_x_list, hidden_x_type, exec_time
+    ODM_env, hidden_x_list, hidden_x_type, exec_time, directions = x_list
   )
 
   if (dev_opt == F) {
