@@ -56,6 +56,7 @@ main_hidden <-function(gen_points = 100,
                        method = "mahalanobis",
                        check_version = "fast",
                        num_workers = detectCores()/2,
+                       until_gen = FALSE,
                        dev_opt = FALSE,...){
   #' @title Main function for the hidden algorithm
   #' 
@@ -70,6 +71,7 @@ main_hidden <-function(gen_points = 100,
     fit_all_methods(method,...)
   }
   tic()
+  if (!until_gen){
   x_list = hidden_sample(gen_points = gen_points, 
                          eps = eps, 
                          l = min(DB[2:(ncol(DB)-1)]), 
@@ -98,6 +100,46 @@ main_hidden <-function(gen_points = 100,
   exec_time = toc()
   exec_time = exec_time$callback_msg
   stopImplicitCluster()
+  }else{
+    registerDoParallel(num_workers)
+    hidden_count = 0
+    tic()
+    while(hidden_count <= gen_points){
+      print(glue("Finding Outliers... {hidden_count/gen_points * 100}%"))
+      x_list = hidden_sample(gen_points = 4*num_workers, 
+                             eps = eps, 
+                             l = min(DB[2:(ncol(DB)-1)]), 
+                             u = max(DB[2:(ncol(DB)-1)]))
+      dummy_hidden_results <- foreach (i = 1:nrow(x_list), .combine = rbind
+                                       ) %dopar% {
+        if (check_version == "fast"){
+          check_if_outlier = outlier_check_fast(x_list[i,])
+        }else{
+          check_if_outlier = outlier_check(x_list[i,])
+        }
+        if(check_if_outlier[[1]] == 0){ 
+          print(glue('x in {check_if_outlier[[2]]}'))
+          result_point = x_list[i,] 
+          result_point[length(result_point) + 1] = check_if_outlier[[2]]
+        }else{
+          result_point = matrix(0,1,ncol(x_list) + 1)}
+        result_point}
+    if(hidden_count == 0){
+      hidden_results <- dummy_hidden_results
+    }else{  
+    hidden_results  <- rbind(dummy_hidden_results, hidden_results)}
+    hidden_count <- nrow(matrix(as.numeric(hidden_results[,1:ncol(x_list)]), 
+                                nrow(hidden_results))[
+                                  rowSums(matrix(as.numeric(hidden_results[
+                                    ,1:ncol(x_list)]), nrow(hidden_results))) 
+                                  != 0,])
+    
+    }
+    stopImplicitCluster()
+    exec_time = toc()
+    exec_time = exec_time$callback_msg
+    print(glue("Done!"))
+  }
   
   hidden_x_list <- matrix(as.numeric(hidden_results[,1:ncol(x_list)]), 
                           nrow(hidden_results)) #' We added a char into a 
@@ -122,3 +164,8 @@ main_hidden <-function(gen_points = 100,
     rm(ODM_env, envir = globalenv())}
   return(gen_result)
 }
+
+
+
+
+
