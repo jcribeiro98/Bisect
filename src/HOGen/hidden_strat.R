@@ -132,7 +132,7 @@ main_hidden <-function(gen_points = 100,
                                 nrow(hidden_results))[
                                   rowSums(matrix(as.numeric(hidden_results[
                                     ,1:ncol(x_list)]), nrow(hidden_results))) 
-                                  != 0,])
+                                  != 0, ,drop = FALSE])
     
     }
     stopImplicitCluster()
