@@ -28,7 +28,7 @@ summary.hog_method <- function(method){
              * {italic('Number of features:')} {ncol(method$DB)-2}
              * {italic('Total number of data points:')} {nrow(method$DB)}
              * {italic('Total amount of syntetic data generated:')} {
-             method$n_data_gen}
+             nrow(method$ho_type)}
              \t          {italic('...of which hidden outliers:')} {
              if(class(method$ho_list)[1]!='matrix' && 
              length(method$ho_list)!= 0){
