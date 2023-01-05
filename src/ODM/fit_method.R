@@ -56,7 +56,7 @@ fit <- function(method, S,...){
     }
   }
   
-  if (method == "SVDD"){
+  if (method == "DeepSVDD"){
     init_python()
     model <- import("pyod.models.deep_svdd")
     dsvdd <- model$DeepSVDD()
