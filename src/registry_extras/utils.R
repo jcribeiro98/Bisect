@@ -108,3 +108,17 @@ distmah <- function(S,x){
                      colMeans(DB %>% select(colnames(DB[sS]))), 
                      cov(DB %>% select(colnames(DB[sS])))))
 }
+
+init_python <- function(){
+  if (!("hidden_out" %in% conda_list()[,1])){
+    stop("No virtual enviroment by the name *hidden_out* has been found.
+  Please, read the docs to learn how to install the python methods.
+  If you have succesfully managed the installation, please, restart the R session 
+  and try again.")
+  }
+  use_condaenv("hidden_out")
+  np <- import("numpy")
+  
+}
+
+

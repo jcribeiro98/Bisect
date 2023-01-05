@@ -1,4 +1,5 @@
 library(dbscan)
+library(reticulate)
 source("src/registry_extras/utils.R")
 
 
@@ -52,6 +53,18 @@ fit <- function(method, S,...){
       scores = lof(DB_new[sS],...)
       crit_val = quantile(scores, .95)
       return(scores[nrow(DB) + 1] > crit_val)
+    }
+  }
+  
+  if (method == "SVDD"){
+    init_python()
+    model <- import("pyod.models.deep_svdd")
+    dsvdd <- model$DeepSVDD()
+    
+    sS = set_subspace_grab(S)
+    dsvdd$fit(DB[sS])
+    result <- function(x){
+      return(dsvdd$predict(x))
     }
   }
   
