@@ -64,7 +64,7 @@ fit <- function(method, S,...){
     sS = set_subspace_grab(S)
     dsvdd$fit(DB[sS])
     result <- function(x){
-      prediction = dsvdd$predict(x[sS]) 
+      prediction = dsvdd$predict(matrix(x[sS], ncol = length(sS))) 
       return(prediction == 1 )
     }
   }

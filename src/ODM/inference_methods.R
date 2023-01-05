@@ -29,7 +29,7 @@ inference <- function(x,S, method = "mahalanobis",...){
   #Methods:Given how each method is defined in the method environment, call them
   #to perform inference 
   
-  if(method == "mahalanobis" ){
+  if(method %in% c("mahalanobis", "DeepSVDD")){
     result = ODM_env[[glue("method{set_names(S)}")]](x)
   }
   
