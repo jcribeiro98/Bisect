@@ -14,7 +14,7 @@ fit_all_methods <- function(method,...){
   print(glue(
   "Fitting method: {cyan$underline(method)} to all combination of subspaces: \n"
   ))
-  if (method %in% c("DeepSVDD", "fast_ABOD")){ #Initialize python connection 
+  if (method %in% c("DeepSVDD", "fast_ABOD", "ECOD")){ #Initialize python connection 
     init_python()
   }
   ODM_env = new.env()
@@ -78,6 +78,18 @@ fit <- function(method, S,...){
     fast_abod$fit(DB[sS])
     result <- function(x){
       prediction = fast_abod$predict(matrix(x[sS], ncol = length(sS))) 
+      return(prediction == 1 )
+    }
+  }
+  
+  if (method == "ECOD"){
+    ecod <- import("pyod.models.ecod")
+    ECOD = ecod$ECOD()
+    
+    sS = set_subspace_grab(S)
+    ECOD$fit(DB[sS])
+    result <- function(x){
+      prediction = ECOD$predict(matrix(x[sS], ncol = length(sS)))
       return(prediction == 1 )
     }
   }
