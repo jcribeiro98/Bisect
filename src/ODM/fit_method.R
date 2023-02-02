@@ -1,4 +1,5 @@
 library(dbscan)
+library(reticulate)
 source("src/registry_extras/utils.R")
 
 
@@ -13,7 +14,9 @@ fit_all_methods <- function(method,...){
   print(glue(
   "Fitting method: {cyan$underline(method)} to all combination of subspaces: \n"
   ))
-  
+  if (method %in% c("DeepSVDD", "fast_ABOD", "ECOD")){ #Initialize python connection 
+    init_python()
+  }
   ODM_env = new.env()
   for (s in set_power(as.numeric(1:(ncol(DB)-2)))){
     if (set_is_empty(s) != T){
@@ -55,5 +58,41 @@ fit <- function(method, S,...){
     }
   }
   
+  if (method == "DeepSVDD"){
+    model <- import("pyod.models.deep_svdd")
+    dsvdd <- model$DeepSVDD()
+    
+    sS = set_subspace_grab(S)
+    dsvdd$fit(DB[sS])
+    result <- function(x){
+      prediction = dsvdd$predict(matrix(x[sS], ncol = length(sS))) 
+      return(prediction == 1 )
+    }
+  }
+  
+  if (method == "fast_ABOD"){
+    abod <- import("pyod.models.abod")
+    fast_abod <- abod$ABOD()
+    
+    sS = set_subspace_grab(S)
+    fast_abod$fit(DB[sS])
+    result <- function(x){
+      prediction = fast_abod$predict(matrix(x[sS], ncol = length(sS))) 
+      return(prediction == 1 )
+    }
+  }
+  
+  if (method == "ECOD"){
+    ecod <- import("pyod.models.ecod")
+    ECOD = ecod$ECOD()
+    
+    sS = set_subspace_grab(S)
+    ECOD$fit(DB[sS])
+    result <- function(x){
+      prediction = ECOD$predict(matrix(x[sS], ncol = length(sS)))
+      return(prediction == 1 )
+    }
+  }
+    
   return(result)  
 }
