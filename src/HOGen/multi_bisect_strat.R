@@ -61,8 +61,9 @@ interval_check <- function(l, method, x, parts = 5, ...) {
 }
 
 
-multi_bisect <- function(x, l, iternum = 1000, 
-                         method, verb = F, check_version, ...) {
+multi_bisect <- function(x, l, iternum = 30, 
+                         method, verb = F, check_version, l_val_option = "fixed",
+                         ...) {
   #' @title Multi Bisection algorithm function
   #'
   #' @description Performs the multi bisection algorithm to any given
@@ -76,7 +77,10 @@ multi_bisect <- function(x, l, iternum = 1000,
   #' @param method: ODM
   #' @param verb: Chooses if the function should be verbosal or not
   #' @param ...: Extra param. passed to f.
-
+  
+  if(l_val_option != "fixed"){
+    l = l + runif(1, min = -l/2, max = l)
+  }
 
   interval <- interval_check(l, method, x, ...)
   interval <- sample(interval, 1)[[1]]
@@ -114,7 +118,8 @@ multi_bisect <- function(x, l, iternum = 1000,
 
 main_multibisect <- function(gen_points = 100, method = "mahalanobis", 
                              seed = FALSE, verb = F, check_version = "fast", 
-                             dev_opt = F, num_workers = detectCores()/2, ...) {
+                             dev_opt = F, num_workers = detectCores()/2, 
+                             l_val_option = "fixed",...) {
   #' @title Multi Bisection main function
   #'
   #' @description Main function of the Multi bisection algorithm. It generates
@@ -160,8 +165,9 @@ main_multibisect <- function(gen_points = 100, method = "mahalanobis",
   
   tic()
   bisection_results <- foreach (i = 1:nrow(x_list), .combine = rbind) %dopar% {
-    bisection_results <- multi_bisect( l = l, x = x_list[i, ], method = method, 
-                                 verb = verb, check_version = check_version)
+    bisection_results <- multi_bisect(l = l, x = x_list[i, ], method = method, 
+                                 verb = verb, check_version = check_version, 
+                                 l_val_option = l_val_option)
     hidden_c <- bisection_results[[1]]
     outlier_type <- bisection_results[[2]]
     
