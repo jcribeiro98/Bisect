@@ -2,6 +2,7 @@ library(sets)
 library(glue)
 library(uniformly) 
 library(tictoc)
+library(doRNG)
 source("src/HOGen/outlier_check.R")
 source("src/ODM/inference_methods.R")
 
@@ -164,7 +165,7 @@ main_multibisect <- function(gen_points = 100, method = "mahalanobis",
   registerDoParallel(num_workers)
   
   tic()
-  bisection_results <- foreach (i = 1:nrow(x_list), .combine = rbind) %dopar% {
+  bisection_results <- foreach (i = 1:nrow(x_list), .combine = rbind) %dorng% {
     bisection_results <- multi_bisect(l = l, x = x_list[i, ], method = method, 
                                  verb = verb, check_version = check_version, 
                                  l_val_option = l_val_option)
