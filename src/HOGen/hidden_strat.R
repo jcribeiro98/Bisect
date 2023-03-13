@@ -74,8 +74,8 @@ main_hidden <-function(gen_points = 100,
   if (!until_gen){
   x_list = hidden_sample(gen_points = gen_points, 
                          eps = eps, 
-                         l = min(DB[2:(ncol(DB)-1)]), 
-                         u = max(DB[2:(ncol(DB)-1)]))
+                         l = l, 
+                         u = u)
   
   hidden_x_list = matrix(0, nrow = nrow(x_list), ncol = ncol(x_list))
   hidden_x_type = matrix(0, nrow = nrow(x_list), ncol = 1)
@@ -108,8 +108,8 @@ main_hidden <-function(gen_points = 100,
       print(glue("Finding Outliers... {hidden_count/gen_points * 100}%"))
       x_list = hidden_sample(gen_points = 4*num_workers, 
                              eps = eps, 
-                             l = min(DB[2:(ncol(DB)-1)]), 
-                             u = max(DB[2:(ncol(DB)-1)]))
+                             l = l, 
+                             u = u)
       dummy_hidden_results <- foreach (i = 1:nrow(x_list), .combine = rbind
                                        ) %dopar% {
         if (check_version == "fast"){

@@ -10,8 +10,9 @@ source("src/registry_extras/classes.R")
 source("src/HOGen/outlier_check.R")
 
 
-bisect <- function(l, x, iternum = 1000, method, 
-                   verb = TRUE, check_version = "fast",...) {
+bisect <- function(l, x, iternum = 100, method, 
+                   verb = TRUE, check_version = "fast",
+                   l_val_option = "fixed",...) {
   #' @title Bisection method implementation for function f
   #'
   #' @description Performs the bisection algorithm over the function
@@ -31,7 +32,9 @@ bisect <- function(l, x, iternum = 1000, method,
   #'                  algorithm.
   #' @param verb : (logical) Controls if the function has to be verbose or not.
 
-
+  if (l_val_option != "fixed"){
+    l = l + runif(1, min = -l, max = l)
+  }
   a <- 0
   b <- l
   for (i in 1:iternum) {
@@ -79,7 +82,7 @@ grab_bisect_results <- function(i){
 
 main <- function(gen_points = 100, method = "mahalanobis", seed = FALSE,
                  verb = FALSE, dev_opt = FALSE, check_version = "fast",
-                 num_workers = detectCores()/2,...) {
+                 num_workers = detectCores()/2, l_val_option = "fixed", ...) {
   #' @title Main function for the bisect experiment
   #'
   #' @description Given the number of data that you want to generate (in this
@@ -128,8 +131,8 @@ main <- function(gen_points = 100, method = "mahalanobis", seed = FALSE,
   tic()
   bisection_results <- foreach (i =  1:nrow(x_list), .combine = rbind) %dopar% {
     bisection_results <- bisect( l = l, x = x_list[i, ], method = method, 
-                                 verb = verb, check_version = check_version
-    )
+                                 verb = verb, check_version = check_version, 
+                                 l_val_option = l_val_option)
     hidden_c <- bisection_results[[1]]
     outlier_type <- bisection_results[[2]]
 
