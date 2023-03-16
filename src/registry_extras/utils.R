@@ -3,7 +3,7 @@ library(glue)
 library(dplyr)
 
 
-DB_gen <- function(db){
+DB_gen <- function(db, true_inliers = FALSE, method = "pyod_LOF",...){
 #' @title Formating of a database for the bisection method
 #' 
 #' @description The methods developed in this project utilizes an specific
@@ -37,11 +37,28 @@ DB_gen <- function(db){
   }
   DB['id'] = 1:nrow(DB)
   
-  dM = mahalanobis(as.matrix(DB[2:(ncol(db) + 1)],header=T),
-                   colMeans(as.matrix(DB[2:(ncol(db) + 1)],header=T)),
-                   cov(as.matrix(DB[2:(ncol(db) + 1)],header=T)))
-  DB[ncol(db)+2]=dM
-  colnames(DB)[ncol(db)+2] = 'dM'
+  out = array(0, dim = nrow(DB))
+  if(true_inliers == T){
+    DB <<- DB
+    fit_all_methods(method,...)
+  }
+  if(exists("ODM_env", envir = globalenv())){
+    model = ODM_env[[glue("method{set_names(1:(ncol(DB)-2))}")]]
+    for ( i in 1:nrow(DB)){
+      x = DB[i,]
+      names = names(x)
+      x = as.matrix(x)
+      dim(x) <- NULL
+      
+      names(x) = names
+      if(model(x)){
+          out[i] = 1
+      }
+    }
+  }
+    
+  DB[ncol(db)+2]=out
+  colnames(DB)[ncol(db)+2] = 'Out'
   DB <<- DB
   return(DB)
 }
