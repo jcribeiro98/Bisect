@@ -5,10 +5,11 @@ library(tictoc)
 library(doRNG)
 source("src/HOGen/outlier_check.R")
 source("src/ODM/inference_methods.R")
+source("src/registry_extras/get_origin.R")
 
 
 
-interval_check <- function(l, method, x, parts = 5, ...) {
+interval_check <- function(l, method, x, origin, parts = 5, ...) {
   #' @title Interval Refining function
   #' @description  Breaks the interval in however many parts selected
   #' (defaults to 5)
@@ -29,7 +30,7 @@ interval_check <- function(l, method, x, parts = 5, ...) {
 
   i <- 1
   for (c in segmentation_points) {
-    if (inference(c * x + colMeans(DB[2:(ncol(DB) - 1)]), S = D, method, ...)) {
+    if (inference(c * x + origin, S = D, method, ...)) {
       check[i] <- 1
     }
     i <- i + 1
@@ -63,8 +64,8 @@ interval_check <- function(l, method, x, parts = 5, ...) {
 
 
 multi_bisect <- function(x, l, iternum = 30, 
-                         method, verb = F, check_version, l_val_option = "fixed",
-                         ...) {
+                         method, verb = F, check_version, 
+                         l_val_option = "fixed", origin, ...) {
   #' @title Multi Bisection algorithm function
   #'
   #' @description Performs the multi bisection algorithm to any given
@@ -82,8 +83,9 @@ multi_bisect <- function(x, l, iternum = 30,
   if(l_val_option != "fixed"){
     l = l + runif(1, min = -l/2, max = l)
   }
-
-  interval <- interval_check(l, method, x, ...)
+  
+  
+  interval <- interval_check(l, method, x, origin = origin, ...)
   interval <- sample(interval, 1)[[1]]
   interval_indicator <- interval[[2]]
   interval <- interval[[1]]
@@ -93,11 +95,11 @@ multi_bisect <- function(x, l, iternum = 30,
   for (i in 1:iternum) {
     c <- (b + a) / 2
     if (check_version == "fast"){
-      check_if_outlier <- outlier_check_fast(c * x + colMeans(
-        DB[2:(ncol(DB) - 1)]),method = method, verb = verb, ...)
+      check_if_outlier <- outlier_check_fast(c * x + origin, 
+                                             method = method, verb = verb, ...)
     }else{
-      check_if_outlier <- outlier_check(c * x + colMeans(DB[2:(ncol(DB) - 1)]),
-                                        method = method, verb = verb, ...)
+      check_if_outlier <- outlier_check(c * x + origin, method = method, 
+                                        verb = verb, ...)
       }
     outlier_indicator <- check_if_outlier[[1]]
     outlier_type <- check_if_outlier[[2]]
@@ -120,7 +122,7 @@ multi_bisect <- function(x, l, iternum = 30,
 main_multibisect <- function(gen_points = 100, method = "mahalanobis", 
                              seed = FALSE, verb = F, check_version = "fast", 
                              dev_opt = F, num_workers = detectCores()/2, 
-                             l_val_option = "fixed",...) {
+                             l_val_option = "fixed", type = "centroid", ...) {
   #' @title Multi Bisection main function
   #'
   #' @description Main function of the Multi bisection algorithm. It generates
@@ -162,19 +164,25 @@ main_multibisect <- function(gen_points = 100, method = "mahalanobis",
   
   x_list <- runif_on_sphere(n = gen_points, d = ncol(DB) - 2, r = 1)
   l <- max(sqrt(rowSums(DB[2:(ncol(DB) - 1)]^2)))
+  origin <- get_origin(type)
   registerDoParallel(num_workers)
   
   tic()
+  print(glue("Generating..."))
   bisection_results <- foreach (i = 1:nrow(x_list), .combine = rbind) %dorng% {
     bisection_results <- multi_bisect(l = l, x = x_list[i, ], method = method, 
                                  verb = verb, check_version = check_version, 
-                                 l_val_option = l_val_option)
+                                 l_val_option = l_val_option, origin = origin)
     hidden_c <- bisection_results[[1]]
     outlier_type <- bisection_results[[2]]
     
+    if(type %in% c("random", "weighted")){ #Can't really reevaluate more elegantly,
+      #and don't want to completely clutter the Global Environment 
+      origin = get_origin(type)
+    }
+    
     if (outlier_type %in% c("H1", "H2")) {
-      result_point <- hidden_c * (x_list[i, ]) +
-        colMeans(DB[2:(ncol(DB) - 1)])
+      result_point <- hidden_c * (x_list[i, ]) + origin
       result_point[length(result_point) + 1] = outlier_type 
       #'doPar has a weird way of dealing with 
       #'the outcome of the loops, so we need 
@@ -199,6 +207,8 @@ main_multibisect <- function(gen_points = 100, method = "mahalanobis",
 
   if (dev_opt == F) {
     rm(ODM_env, envir = globalenv())
+    if (type == "weighted"){
+      rm(proba_vector, envir = globalenv())}
   }
   return(gen_result)
 }
