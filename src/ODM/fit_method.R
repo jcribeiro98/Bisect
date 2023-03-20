@@ -2,6 +2,48 @@ library(dbscan)
 library(reticulate)
 source("src/registry_extras/utils.R")
 
+get_subspaces <- function(){
+  if (ncol(DB)-2 <= 11){
+    supS = set_power(as.numeric(1:(ncol(DB)-2)))
+  }else{
+    
+  }
+  
+}
+
+random_subspace <- function(){
+  supS = set()
+  
+  for (i in 1:(2^11-2)){
+    d = sample(1:(ncol(DB)-3),1)
+    s = as.numeric(sample(1:(ncol(DB)-3), d))
+    s = as.set(s)
+    supS = set_union(supS, set(s))
+  }
+  index = array()
+  j = 1
+  for (i in 1:(ncol(DB)-2)){
+    for(s in supS){
+      for (e in s){
+        if(e == i){ #Other checking methods doesn't work
+          index[j] = i
+          j = j + 1
+          break
+          }
+        }
+    }
+  }
+  j = 1
+  elements_not_included = array()
+  for (i in 1:(ncol(DB)-2)){
+    if(!(i %in% index)){
+      elements_not_included[j] = i
+      j = j + 1
+    }
+  }
+  supS = set_union(supS, set(as.set(as.numeric(elements_not_included))))
+}
+
 
 fit_all_methods <- function(method,...){
   #' @title Fit all the methods
@@ -18,7 +60,8 @@ fit_all_methods <- function(method,...){
     init_python()
   }
   ODM_env = new.env()
-  for (s in set_power(as.numeric(1:(ncol(DB)-2)))){
+  
+  for (s in supS){
     if (set_is_empty(s) != T){
       
       print(glue("Fitting in the feature space : {set_names(s, sep = ' & ')}"))

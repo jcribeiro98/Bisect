@@ -152,11 +152,10 @@ main_multibisect <- function(gen_points = 100, method = "mahalanobis",
   }
   if (dev_opt == T) {
     warning(glue("The developer option has been activated.
-                                This means that the ODM environment will not
-                                be deleted, and therefore some collusion might
-                                occur with following experiments. Poceed with
-                                caution
-                                "))
+                 This means that the ODM environment will not
+                 be deleted, and therefore some collusion might
+                 occur with following experiments. Poceed with
+                 caution"))
   }
   if(exists("ODM_env", envir = globalenv()) != T){
     fit_all_methods(method,...)
