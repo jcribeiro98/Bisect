@@ -25,7 +25,7 @@ outlier_check_fast <- function(x, verb = FALSE, method = "mahalanobis", ...) {
   
   h2 <- matrix(0, ncol = 2^(ncol(DB) - 2) - 1, nrow = 1)
   h2[2^(ncol(DB) - 2) - 1] <- 1
-  supS <- set_power(as.numeric(1:(ncol(DB) - 2)))
+  supS <- ODM_env$supS
   index <- matrix(0, ncol = 2^(ncol(DB) - 2) - 1, nrow = 1)
   if (inference(x, 1:(ncol(DB) - 2), method, ...)) {
     index[2^(ncol(DB) - 2) - 1] = 1
@@ -92,7 +92,7 @@ outlier_check <- function(x, verb = F, method = "mahalanobis", ...) {
   
   h2 <- matrix(0, ncol = 2^(ncol(DB) - 2) - 1, nrow = 1)
   h2[2^(ncol(DB) - 2) - 1] <- 1
-  supS <- set_power(as.numeric(1:(ncol(DB) - 2)))
+  supS <- ODM_env$supS
   index <- matrix(0, ncol = 2^(ncol(DB) - 2) - 1, nrow = 1)
   
   # Checking loops  ---------------------------------------------------------

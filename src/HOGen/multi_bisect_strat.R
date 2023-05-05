@@ -3,12 +3,69 @@ library(glue)
 library(uniformly) 
 library(tictoc)
 library(doRNG)
+library(progress)
 source("src/HOGen/outlier_check.R")
 source("src/ODM/inference_methods.R")
 source("src/registry_extras/get_origin.R")
 
+parall_routine <- function(l, x_list, method, verb,
+                           check_version,l_val_option, origin, type){
+  bisection_results <- foreach (i = 1:nrow(x_list), .combine = rbind) %dorng% {
+    bisection_results <- multi_bisect(l = l, x = x_list[i, ], method = method, 
+                                      verb = verb, check_version = check_version, 
+                                      l_val_option = l_val_option, origin = origin)
+    hidden_c <- bisection_results[[1]]
+    outlier_type <- bisection_results[[2]]
+    
+    if(type %in% c("random", "weighted")){ #Can't really reevaluate more elegantly,
+      #and don't want to completely clutter the Global Environment 
+      origin = invisible(get_origin(type))
+    }
+    
+    if (outlier_type %in% c("H1", "H2")) {
+      result_point <- hidden_c * (x_list[i, ]) + origin
+      result_point[length(result_point) + 1] = outlier_type 
+      #'doPar has a weird way of dealing with 
+      #'the outcome of the loops, so we need 
+      #'to handle the results this way
+    }else{result_point = matrix(0,1,ncol(DB)-1)}
+    result_point
+  }
+  return(bisection_results)
+}
+
+sc_routine <- function(l, x_list, method, verb,check_version,
+                       l_val_option,origin, type){
+  pb <- progress_bar$new(total = nrow(x_list)) 
+  hidden_x_list <- matrix(0, nrow = nrow(x_list), ncol = ncol(x_list))
+  hidden_x_type <- matrix(0, nrow = nrow(x_list), ncol = 1)
+  
+  for(i in 1:nrow(x_list)){
+    bisection_results <- multi_bisect(l = l, x = x_list[i, ], method = method, 
+                                      verb = verb, check_version = check_version, 
+                                      l_val_option = l_val_option, origin = origin)
+    hidden_c <- bisection_results[[1]]
+    outlier_type <- bisection_results[[2]]
+    
+    if(type %in% c("random", "weighted")){ #Can't really reevaluate more elegantly,
+      #and don't want to completely clutter the Global Environment 
+      origin = invisible(get_origin(type))
+    }
+    pb$tick()
+    if (outlier_type %in% c("H1", "H2")) {
+      hidden_x_list[i,] <- hidden_c * (x_list[i, ]) + origin
+      hidden_x_type[i,] = outlier_type 
+      #'doPar has a weird way of dealing with 
+      #'the outcome of the loops, so we need 
+      #'to handle the results this way
+    }else{result_point = matrix(0,1,ncol(DB)-1)}
+  }
+  return(cbind(hidden_x_list,hidden_x_type))
+}
 
 
+  
+  
 interval_check <- function(l, method, x, origin, parts = 5, ...) {
   #' @title Interval Refining function
   #' @description  Breaks the interval in however many parts selected
@@ -105,7 +162,7 @@ multi_bisect <- function(x, l, iternum = 30,
     outlier_type <- check_if_outlier[[2]]
 
     if (outlier_indicator == 0) {
-      print(glue("x in {outlier_type}"))
+      if (verb == TRUE){print(glue("x in {outlier_type}"))}
       return(list(c, outlier_type))
       break
     }
@@ -164,31 +221,18 @@ main_multibisect <- function(gen_points = 100, method = "mahalanobis",
   x_list <- runif_on_sphere(n = gen_points, d = ncol(DB) - 2, r = 1)
   l <- max(sqrt(rowSums(DB[2:(ncol(DB) - 1)]^2)))
   origin <- get_origin(type)
-  registerDoParallel(num_workers)
   
   tic()
   print(glue("Generating..."))
-  bisection_results <- foreach (i = 1:nrow(x_list), .combine = rbind) %dorng% {
-    bisection_results <- multi_bisect(l = l, x = x_list[i, ], method = method, 
-                                 verb = verb, check_version = check_version, 
-                                 l_val_option = l_val_option, origin = origin)
-    hidden_c <- bisection_results[[1]]
-    outlier_type <- bisection_results[[2]]
-    
-    if(type %in% c("random", "weighted")){ #Can't really reevaluate more elegantly,
-      #and don't want to completely clutter the Global Environment 
-      origin = get_origin(type)
+  
+  if(num_workers == 1){
+    bisection_results <- sc_routine(l, x_list, method, verb,check_version,l_val_option,origin,type)
+  }else{
+    registerDoParallel(num_workers)
+      bisection_results <- parall_routine(l, x_list, method, verb,check_version,
+                     l_val_option,origin,type)
     }
-    
-    if (outlier_type %in% c("H1", "H2")) {
-      result_point <- hidden_c * (x_list[i, ]) + origin
-      result_point[length(result_point) + 1] = outlier_type 
-      #'doPar has a weird way of dealing with 
-      #'the outcome of the loops, so we need 
-      #'to handle the results this way
-    }else{result_point = matrix(0,1,ncol(DB)-1)}
-    result_point
-  }
+  
   exec_time <- toc()
   exec_time <- exec_time$callback_msg
   stopImplicitCluster()

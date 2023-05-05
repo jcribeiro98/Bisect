@@ -4,17 +4,22 @@ source("src/registry_extras/utils.R")
 
 get_subspaces <- function(){
   if (ncol(DB)-2 <= 11){
+    print(glue("Calculating all possible subspaces..."))
     supS = set_power(as.numeric(1:(ncol(DB)-2)))
+    print(glue("Done! Number of total subspaces: {length(supS)}"))
   }else{
-    
+    print(glue("Selecting random subspaces..."))
+    supS = random_subspace()  
+    print(glue("Done! Number of subspaces selected: {length(supS)}"))
   }
-  
+  return(supS)
 }
 
 random_subspace <- function(){
   supS = set()
   
-  for (i in 1:(2^11-2)){
+  for (i in 1:(2^11-2)){ #With replacement (feature bagging)
+    print(glue("{i/(2^11 - 2)}%"))
     d = sample(1:(ncol(DB)-3),1)
     s = as.numeric(sample(1:(ncol(DB)-3), d))
     s = as.set(s)
@@ -41,7 +46,11 @@ random_subspace <- function(){
       j = j + 1
     }
   }
-  supS = set_union(supS, set(as.set(as.numeric(elements_not_included))))
+  if(!elements_not_included %is% NA){
+    supS = set_union(supS, set(as.set(as.numeric(elements_not_included))))
+  }
+  supS = set_union(supS, set(as.set(as.numeric(1:(ncol(DB)- 2)))))
+  return(supS)
 }
 
 
@@ -60,6 +69,8 @@ fit_all_methods <- function(method,...){
     init_python()
   }
   ODM_env = new.env()
+  supS = get_subspaces()
+  ODM_env$supS = supS
   
   for (s in supS){
     if (set_is_empty(s) != T){
