@@ -23,12 +23,12 @@ outlier_check_fast <- function(x, verb = FALSE, method = "mahalanobis", ...) {
 
   # Preface -----------------------------------------------------------------
   
-  h2 <- matrix(0, ncol = 2^(ncol(DB) - 2) - 1, nrow = 1)
-  h2[2^(ncol(DB) - 2) - 1] <- 1
+  h2 <- matrix(0, ncol = length(ODM_env$supS), nrow = 1)
+  h2[length(ODM_env$supS)] <- 1
   supS <- ODM_env$supS
-  index <- matrix(0, ncol = 2^(ncol(DB) - 2) - 1, nrow = 1)
+  index <- matrix(0, ncol = length(ODM_env$supS), nrow = 1)
   if (inference(x, 1:(ncol(DB) - 2), method, ...)) {
-    index[2^(ncol(DB) - 2) - 1] = 1
+    index[length(ODM_env$supS)] = 1
   }
   
   # Checking loops  ---------------------------------------------------------
@@ -45,13 +45,13 @@ outlier_check_fast <- function(x, verb = FALSE, method = "mahalanobis", ...) {
  
   # Logical assortment ------------------------------------------------------
   
-  if (sum(index[1:(2^(ncol(DB) - 2) - 2)]) > 0 &&
-      index[2^(ncol(DB) - 2) - 1] == 0) {
+  if (sum(index[1:(length(ODM_env$supS) - 1)]) > 0 &&
+      index[length(ODM_env$supS)] == 0) {
     result <- list(0, "H1")
   } else if (isTRUE(all.equal(index, h2))) {
     result <- list(0, "H2")
-  } else if (sum(index[1:(2^(ncol(DB) - 2) - 2)]) > 0 &&
-             index[2^(ncol(DB) - 2) - 1] == 1) {
+  } else if (sum(index[1:(length(ODM_env$supS) - 1)]) > 0 &&
+             index[length(ODM_env$supS)] == 1) {
     if (verb == T) {
       print(glue("x Outside of bounds"))
     }
@@ -90,10 +90,10 @@ outlier_check <- function(x, verb = F, method = "mahalanobis", ...) {
   
   # Preface -----------------------------------------------------------------
   
-  h2 <- matrix(0, ncol = 2^(ncol(DB) - 2) - 1, nrow = 1)
-  h2[2^(ncol(DB) - 2) - 1] <- 1
+  h2 <- matrix(0, ncol = length(ODM_env$supS), nrow = 1)
+  h2[length(ODM_env$supS)] <- 1
   supS <- ODM_env$supS
-  index <- matrix(0, ncol = 2^(ncol(DB) - 2) - 1, nrow = 1)
+  index <- matrix(0, ncol = length(ODM_env$supS), nrow = 1)
   
   # Checking loops  ---------------------------------------------------------
   
@@ -109,13 +109,13 @@ outlier_check <- function(x, verb = F, method = "mahalanobis", ...) {
   
   # Logical assortment ------------------------------------------------------
   
-  if (sum(index[1:(2^(ncol(DB) - 2) - 2)]) > 0 &&
-      index[2^(ncol(DB) - 2) - 1] == 0) {
+  if (sum(index[1:(length(ODM_env$supS) - 1)]) > 0 &&
+      index[length(ODM_env$supS)] == 0) {
     result <- list(0, "H1")
   } else if (isTRUE(all.equal(index, h2))) {
     result <- list(0, "H2")
-  } else if (sum(index[1:(2^(ncol(DB) - 2) - 2)]) > 0 &&
-             index[2^(ncol(DB) - 2) - 1] == 1) {
+  } else if (sum(index[1:(length(ODM_env$supS) - 1)]) > 0 &&
+             index[length(ODM_env$supS)] == 1) {
     if (verb == T) {
       print(glue("x Outside of bounds"))
     }
