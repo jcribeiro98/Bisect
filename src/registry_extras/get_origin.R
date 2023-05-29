@@ -49,7 +49,7 @@ get_origin <- function(type){
     names(DB)[ncol(DB)] = "proba_vector"
     out_DB = DB %>% filter(Out == 0)
     index <- sample(1:nrow(out_DB), 1, prob = out_DB$proba_vector)
-    origin <- out_DB[index, 2:(ncol(out_DB) - 1)]
+    origin <- out_DB[index, 2:(ncol(out_DB) - 2)]
     names = names(origin)
     origin = as.matrix(origin)
     dim(origin) <- NULL

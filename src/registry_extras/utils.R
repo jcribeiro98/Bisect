@@ -105,6 +105,16 @@ set_subspace_grab <- function(S){
   return(sS)
 }
 
+set_index_grab <- function(S){
+  sS = c(0)
+  j = 1
+  for (i in S){
+    sS[j] = as.numeric(glue('{i}'))
+    j = j + 1
+  }
+  return(sS)
+}
+
 
 distmah <- function(S,x){
   #' @title Calculation of the Mah. distance.

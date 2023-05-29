@@ -1,5 +1,6 @@
 library(dbscan)
 library(reticulate)
+library(progress)
 source("src/registry_extras/utils.R")
 
 get_subspaces <- function(){
@@ -17,14 +18,18 @@ get_subspaces <- function(){
 
 random_subspace <- function(){
   supS = set()
+  sets = list()
   
+  pb <- progress_bar$new(total = 2^11-2) 
+  print("Calculating all subspaces")
   for (i in 1:(2^11-2)){ #With replacement (feature bagging)
-    print(glue("{i/(2^11 - 2)}%"))
     d = sample(1:(ncol(DB)-3),1)
     s = as.numeric(sample(1:(ncol(DB)-3), d))
     s = as.set(s)
     supS = set_union(supS, set(s))
+    pb$tick()
   }
+  
   index = array()
   j = 1
   for (i in 1:(ncol(DB)-2)){
@@ -74,7 +79,6 @@ fit_all_methods <- function(method,...){
   
   for (s in supS){
     if (set_is_empty(s) != T){
-      
       print(glue("Fitting in the feature space : {set_names(s, sep = ' & ')}"))
       ODM_env[[glue("method{set_names(s)}")]] = fit(method, s,...)
     }

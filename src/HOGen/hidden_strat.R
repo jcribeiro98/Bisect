@@ -4,6 +4,43 @@ source("src/ODM/inference_methods.R")
 source("src/registry_extras/classes.R")
 source("src/HOGen/outlier_check.R")
 
+hidden_parall_routine <- function(x_list,check_version){
+  hidden_results <- foreach (i = 1:nrow(x_list), .combine = rbind) %dopar% {
+    if (check_version == "fast"){
+      check_if_outlier = outlier_check_fast(x_list[i,])
+    }else{
+      check_if_outlier = outlier_check(x_list[i,])
+    }
+    if(check_if_outlier[[1]] == 0){ 
+      print(glue('x in {check_if_outlier[[2]]}'))
+      result_point = x_list[i,] 
+      result_point[length(result_point) + 1] = check_if_outlier[[2]]
+    }else{
+      result_point = matrix(0,1,ncol(x_list) + 1)}
+    result_point  
+  }
+  return(hidden_results)
+} 
+
+hidden_sc_routine <- function(x_list, check_version){
+  hidden_x_list = matrix(0, nrow = nrow(x_list), ncol = ncol(x_list))
+  hidden_x_type = matrix(0, nrow = nrow(x_list), ncol = 1)
+  for (i in 1:nrow(x_list)){
+  if (check_version == "fast"){
+    check_if_outlier = outlier_check_fast(x_list[i,])
+  }else{
+    check_if_outlier = outlier_check(x_list[i,])
+    }
+  if(check_if_outlier[[1]] == 0){ 
+    print(glue('x in {check_if_outlier[[2]]}'))
+    hidden_x_list[i,] = x_list[i,] 
+    hidden_x_type[i,] = check_if_outlier[[2]]
+    }
+  }
+  return(cbind(hidden_x_list,hidden_x_type))
+}
+
+
 hidden_sample = function(gen_points = 100, 
                          eps, 
                          l = min(DB[2:(ncol(DB)-1)]), 
@@ -77,9 +114,6 @@ main_hidden <-function(gen_points = 100,
                          l = l, 
                          u = u)
   
-  hidden_x_list = matrix(0, nrow = nrow(x_list), ncol = ncol(x_list))
-  hidden_x_type = matrix(0, nrow = nrow(x_list), ncol = 1)
-  
   registerDoParallel(num_workers)
   
   
@@ -110,20 +144,11 @@ main_hidden <-function(gen_points = 100,
                              eps = eps, 
                              l = l, 
                              u = u)
-      dummy_hidden_results <- foreach (i = 1:nrow(x_list), .combine = rbind
-                                       ) %dopar% {
-        if (check_version == "fast"){
-          check_if_outlier = outlier_check_fast(x_list[i,])
-        }else{
-          check_if_outlier = outlier_check(x_list[i,])
-        }
-        if(check_if_outlier[[1]] == 0){ 
-          print(glue('x in {check_if_outlier[[2]]}'))
-          result_point = x_list[i,] 
-          result_point[length(result_point) + 1] = check_if_outlier[[2]]
-        }else{
-          result_point = matrix(0,1,ncol(x_list) + 1)}
-        result_point}
+    if (num_workers == 1){
+      dummy_hidden_results <- hidden_sc_routine(x_list,check_version)
+    }else{
+      dummy_hidden_results <- hidden_parall_routine(x_list,check_version)
+    }
     if(hidden_count == 0){
       hidden_results <- dummy_hidden_results
     }else{  

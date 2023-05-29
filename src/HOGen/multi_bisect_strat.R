@@ -9,7 +9,8 @@ source("src/ODM/inference_methods.R")
 source("src/registry_extras/get_origin.R")
 
 parall_routine <- function(l, x_list, method, verb,
-                           check_version,l_val_option, origin, type){
+                           check_version,l_val_option, origin, type, seed){
+
   bisection_results <- foreach (i = 1:nrow(x_list), .combine = rbind) %dorng% {
     bisection_results <- multi_bisect(l = l, x = x_list[i, ], method = method, 
                                       verb = verb, check_version = check_version, 
@@ -35,7 +36,8 @@ parall_routine <- function(l, x_list, method, verb,
 }
 
 sc_routine <- function(l, x_list, method, verb,check_version,
-                       l_val_option,origin, type){
+                       l_val_option,origin, type, seed){
+
   pb <- progress_bar$new(total = nrow(x_list)) 
   hidden_x_list <- matrix(0, nrow = nrow(x_list), ncol = ncol(x_list))
   hidden_x_type <- matrix(0, nrow = nrow(x_list), ncol = 1)
@@ -108,13 +110,19 @@ interval_check <- function(l, method, x, origin, parts = 5, ...) {
     previous <- check[i]
   }
   if(length(interval) == 0){
-    interval <- append(interval, list(list(
-      c(
-        segmentation_points[1],
-        segmentation_points[length(check)]
-      ),
-      c(check[i - 1], check[i])
-    )))
+    
+    if(check[1] == 1){
+      interval <- append(interval, list(list(
+        c(
+          segmentation_points[1],
+          segmentation_points[length(check)]
+        ),
+        c(check[i - 1], check[i])
+      )))
+    }
+    if(check[1] == -1){
+      interval = interval_check(2*l, method, x, origin, parts)
+    }
   }
   return(interval)
 }
@@ -226,11 +234,11 @@ main_multibisect <- function(gen_points = 100, method = "mahalanobis",
   print(glue("Generating..."))
   
   if(num_workers == 1){
-    bisection_results <- sc_routine(l, x_list, method, verb,check_version,l_val_option,origin,type)
+    bisection_results <- sc_routine(l, x_list, method, verb,check_version,l_val_option,origin,type,seed)
   }else{
     registerDoParallel(num_workers)
       bisection_results <- parall_routine(l, x_list, method, verb,check_version,
-                     l_val_option,origin,type)
+                     l_val_option,origin,type,seed)
     }
   
   exec_time <- toc()
