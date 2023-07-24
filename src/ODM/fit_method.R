@@ -1,6 +1,5 @@
 library(dbscan)
 library(reticulate)
-library(progress)
 source("src/registry_extras/utils.R")
 
 get_subspaces <- function(){
@@ -18,18 +17,15 @@ get_subspaces <- function(){
 
 random_subspace <- function(){
   supS = set()
-  sets = list()
-  
   pb <- progress_bar$new(total = 2^11-2) 
-  print("Calculating all subspaces")
+  
   for (i in 1:(2^11-2)){ #With replacement (feature bagging)
     d = sample(1:(ncol(DB)-3),1)
     s = as.numeric(sample(1:(ncol(DB)-3), d))
     s = as.set(s)
     supS = set_union(supS, set(s))
-    pb$tick()
+    pb$tick() 
   }
-  
   index = array()
   j = 1
   for (i in 1:(ncol(DB)-2)){
@@ -39,8 +35,8 @@ random_subspace <- function(){
           index[j] = i
           j = j + 1
           break
-          }
         }
+      }
     }
   }
   j = 1
@@ -68,7 +64,7 @@ fit_all_methods <- function(method,...){
   #' @param method: ODM
   #' @param ...: Params that are passed to the fit function.
   print(glue(
-  "Fitting method: {cyan$underline(method)} to all combination of subspaces: \n"
+    "Fitting method: {cyan$underline(method)} to all combination of subspaces: \n"
   ))
   if (method %in% c("DeepSVDD", "fast_ABOD", "ECOD","pyod_LOF")){ #Initialize python connection 
     init_python()
@@ -79,13 +75,30 @@ fit_all_methods <- function(method,...){
   
   for (s in supS){
     if (set_is_empty(s) != T){
+      
       print(glue("Fitting in the feature space : {set_names(s, sep = ' & ')}"))
       ODM_env[[glue("method{set_names(s)}")]] = fit(method, s,...)
     }
   }
   ODM_env <<-ODM_env
-} 
   
+  model = ODM_env[[glue("method{set_names(1:(ncol(DB)-2))}")]]
+  out = array(0, dim = nrow(DB))
+  # for ( i in 1:nrow(DB)){
+  #   x = DB[i,]
+  #   names = names(x)
+  #   x = as.matrix(x)
+  #   dim(x) <- NULL
+  #   
+  #   names(x) = names
+  #   if(model(x)){
+  #     out[i] = 1
+  #   }
+  # }
+  # DB["Out"] = out
+  # DB <<- DB
+} 
+
 fit <- function(method, S,...){
   #' @title Fit function
   #' 
@@ -107,7 +120,7 @@ fit <- function(method, S,...){
   if (method == "LOF"){
     sS = set_subspace_grab(S)
     DB_new = DB
-  
+    
     result = function(x,...){
       DB_new[nrow(DB) + 1,sS] = x[sS]
       scores = lof(DB_new[sS],...)
@@ -162,6 +175,6 @@ fit <- function(method, S,...){
       return(prediction == 1 )
     }
   }
-    
+  
   return(result)  
 }

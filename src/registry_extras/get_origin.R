@@ -6,11 +6,12 @@ source("src/ODM/inference_methods.R")
 
 
 get_origin <- function(type){
-  print(glue("Origin method: {type}"))
   if (type == "centroid"){
+    print(glue("Origin method: {type}"))
     origin = colMeans(DB[2:(ncol(DB) - 1)])
   }
   if (type == "least_outlier"){
+    print(glue("Origin method: {type}"))
     model <- import("pyod.models.lof")
     lof <- model$LOF()
     lof$fit(DB[2:(ncol(DB) - 1)])
@@ -24,6 +25,7 @@ get_origin <- function(type){
     names(origin) = names
   }
   if (type == "random"){
+    print(glue("Origin method: {type}"))
     out_DB = DB %>% filter(Out == 0)
     
     index <- sample(1:nrow(out_DB), 1)
@@ -36,12 +38,14 @@ get_origin <- function(type){
   }
   if (type == "weighted"){
     if (exists("proba_vector") != TRUE){
+      print(glue("Origin method: {type}"))
       print(glue("Calculating probability vector..."))
       model <- import("pyod.models.lof")
       lof <- model$LOF()
       lof$fit(DB[2:(ncol(DB) - 1)])
       proba_vector = lof$predict_proba(DB[2:(ncol(DB) - 1)])[,1]
       proba_vector <<- proba_vector/sum(proba_vector)
+      #DB["Out"] <<- lof$predict(DB[2:(ncol(DB)-1)])
       print(glue("Done!"))
       }
     
