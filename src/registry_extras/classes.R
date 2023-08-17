@@ -1,18 +1,32 @@
 library(crayon)
 
 
-hog_method <- function(DB, B ,od_name, hog_name, 
-                       ODM_env, ho_list, ho_type, exec_tyme, directions = NA){
-  structure(list(DB, B ,od_name, hog_name,
-                 ODM_env, ho_list, ho_type, exec_tyme, directions),
+hog_method <- function(DB, gen_data ,od_name, hog_name, 
+                       ODM_env, ho_list, ho_type, exec_time, directions = NA){
+  #' @title Hidden Outlier Generation Method Class
+  #' @description Definition of the HOG method class for R
+  #' 
+  #' Arguments:
+  #' @param DB: Dataset used
+  #' @param gen_data: Number of data generated
+  #' @param od_name: Adersary name
+  #' @param hog_name: HOG method used
+  #' @param ODM_env: Environment containing all fitted detectors
+  #' @param ho_list: Generated Hidden Outliers
+  #' @param ho_type: Type of the generated hidden outliers (H1 or H2)
+  #' @param exec_time: Execution time of the generation
+  #' @param directions: Vectors sampled inside the sphere (defaults to none)
+  structure(list(DB, gen_data ,od_name, hog_name,
+                 ODM_env, ho_list, ho_type, exec_time, directions),
             names = c("DB", "n_data_gen" ,"odm_name", "hog_name",
                       "ODM_env", "ho_list", "ho_type", "exec_time", "directions"),
             class = "hog_method")
 }
 
+ 
 print.hog_method <- function(method){
   print(glue("{bold('Hidden Outlier Generation Method Object')}\n\n
-             Outlier Gen Method used: {method$odm_name}\n
+             Adversary used: {method$odm_name}\n
              Synthetic HO generation method employed: {method$hog_name}.\n\n
              {cyan('Use summary() for a detailed description')}\n
              {silver('All the fitted ODMs for each subspace can be found in the 
@@ -20,7 +34,7 @@ print.hog_method <- function(method){
           
 summary.hog_method <- function(method){
   print(glue("{bold('Hidden Outlier Generation Method Object')}\n\n
-             Outlier detection method used: {method$odm_name}\n
+             Adversary used: {method$odm_name}\n
              Synthetic HO generation method employed: {method$hog_name}.
              
 \n\n {underline('Database summary')}:

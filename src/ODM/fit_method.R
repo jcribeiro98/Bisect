@@ -2,6 +2,61 @@ library(dbscan)
 library(reticulate)
 source("src/registry_extras/utils.R")
 
+get_subspaces <- function(){
+  #' @description Auxiliary function to obtain all possible subspaces.
+  
+  if (ncol(DB)-2 <= 11){
+    print(glue("Calculating all possible subspaces..."))
+    supS = set_power(as.numeric(1:(ncol(DB)-2)))
+    print(glue("Done! Number of total subspaces: {length(supS)}"))
+  }else{
+    print(glue("Selecting random subspaces..."))
+    supS = random_subspace()  
+    print(glue("Done! Number of subspaces selected: {length(supS)}"))
+  }
+  return(supS)
+}
+
+random_subspace <- function(){
+  #' @description Auxiliary function to randomly sample subspaces.
+  supS = set()
+  pb <- progress_bar$new(total = 2^11-2) 
+  
+  for (i in 1:(2^11-2)){ #With replacement (feature bagging)
+    d = sample(1:(ncol(DB)-3),1)
+    s = as.numeric(sample(1:(ncol(DB)-3), d))
+    s = as.set(s)
+    supS = set_union(supS, set(s))
+    pb$tick() 
+  }
+  index = array()
+  j = 1
+  for (i in 1:(ncol(DB)-2)){
+    for(s in supS){
+      for (e in s){
+        if(e == i){ #Other checking methods doesn't work
+          index[j] = i
+          j = j + 1
+          break
+        }
+      }
+    }
+  }
+  j = 1
+  elements_not_included = array()
+  for (i in 1:(ncol(DB)-2)){
+    if(!(i %in% index)){
+      elements_not_included[j] = i
+      j = j + 1
+    }
+  }
+  if(!elements_not_included %is% NA){
+    supS = set_union(supS, set(as.set(as.numeric(elements_not_included))))
+  }
+  supS = set_union(supS, set(as.set(as.numeric(1:(ncol(DB)- 2)))))
+  return(supS)
+}
+
 
 fit_all_methods <- function(method,...){
   #' @title Fit all the methods
@@ -12,13 +67,16 @@ fit_all_methods <- function(method,...){
   #' @param method: ODM
   #' @param ...: Params that are passed to the fit function.
   print(glue(
-  "Fitting method: {cyan$underline(method)} to all combination of subspaces: \n"
+    "Fitting method: {cyan$underline(method)} to all combination of subspaces: \n"
   ))
   if (method %in% c("DeepSVDD", "fast_ABOD", "ECOD","pyod_LOF")){ #Initialize python connection 
     init_python()
   }
   ODM_env = new.env()
-  for (s in set_power(as.numeric(1:(ncol(DB)-2)))){
+  supS = get_subspaces()
+  ODM_env$supS = supS
+  
+  for (s in supS){
     if (set_is_empty(s) != T){
       
       print(glue("Fitting in the feature space : {set_names(s, sep = ' & ')}"))
@@ -26,8 +84,11 @@ fit_all_methods <- function(method,...){
     }
   }
   ODM_env <<-ODM_env
-} 
   
+  model = ODM_env[[glue("method{set_names(1:(ncol(DB)-2))}")]]
+  out = array(0, dim = nrow(DB))
+} 
+
 fit <- function(method, S,...){
   #' @title Fit function
   #' 
@@ -49,7 +110,7 @@ fit <- function(method, S,...){
   if (method == "LOF"){
     sS = set_subspace_grab(S)
     DB_new = DB
-  
+    
     result = function(x,...){
       DB_new[nrow(DB) + 1,sS] = x[sS]
       scores = lof(DB_new[sS],...)
@@ -92,7 +153,18 @@ fit <- function(method, S,...){
       return(prediction == 1 )
     }
   }
-  
+  if (method == "kNN"){
+    model <- import("pyod.models.knn")
+    lof <- model$KNN(...)
+    
+    sS = set_subspace_grab(S)
+    lof$fit(DB[sS])
+    
+    result = function(x){
+      prediction = lof$predict(matrix(x[sS], ncol = length(sS)))
+      return(prediction == 1)
+    }
+  }  
   if (method == "ECOD"){
     ecod <- import("pyod.models.ecod")
     ECOD = ecod$ECOD(...)
@@ -104,6 +176,6 @@ fit <- function(method, S,...){
       return(prediction == 1 )
     }
   }
-    
+  
   return(result)  
 }

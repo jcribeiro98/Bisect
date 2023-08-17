@@ -13,8 +13,10 @@ source("src/HOGen/outlier_check.R")
 bisect <- function(l, x, iternum = 100, method, 
                    verb = TRUE, check_version = "fast",
                    l_val_option = "fixed",...) {
-  #' @title Bisection method implementation for function f
+  #' @title Bisection method implementation for function f (DEPRICATED)
   #'
+  #' @note THIS FUNCTION PERFORMS AN OLDER VERSION OF BISECT WITHOUT THE 
+  #' CUT TRICK. 
   #' @description Performs the bisection algorithm over the function
   #'                        f*: [0,L]-->R^2--->R
   #'                             c      cx   f(cx),
@@ -67,6 +69,8 @@ bisect <- function(l, x, iternum = 100, method,
 }
 
 grab_bisect_results <- function(i){
+  #' @note THIS FUNCTION PERFORMS AN OLDER VERSION OF BISECT WITHOUT THE 
+  #' CUT TRICK. 
   bisection_results <- bisect( l = l, x = x_list[i, ], method = method, 
                                verb = verb, check_version = check_version
   )
@@ -84,7 +88,9 @@ main <- function(gen_points = 100, method = "mahalanobis", seed = FALSE,
                  verb = FALSE, dev_opt = FALSE, check_version = "fast",
                  num_workers = detectCores()/2, l_val_option = "fixed", ...) {
   #' @title Main function for the bisect experiment
-  #'
+  #' 
+  #' @note THIS FUNCTION PERFORMS AN OLDER VERSION OF BISECT WITHOUT THE 
+  #' CUT TRICK. 
   #' @description Given the number of data that you want to generate (in this
   #' case, B=100 is default), the function tries to find a hidden outlier in the
   #' direction of those B generated data, by the bisection rule defined with

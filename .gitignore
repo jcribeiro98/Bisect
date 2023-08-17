@@ -6,3 +6,4 @@ seed/
 .Rhistory
 experiments/
 databases/
+.vscode/

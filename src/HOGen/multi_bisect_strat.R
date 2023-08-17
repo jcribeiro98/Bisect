@@ -3,25 +3,108 @@ library(glue)
 library(uniformly) 
 library(tictoc)
 library(doRNG)
+library(progress)
 source("src/HOGen/outlier_check.R")
 source("src/ODM/inference_methods.R")
 source("src/registry_extras/get_origin.R")
 
+parall_routine <- function(l, x_list, method, verb,
+                           check_version,l_val_option, origin){
+  #' @title Parallelization of Bisect.
+  #' @description Does the needed calculations and handling to perform 
+  #' BISECT under parallelization. 
+  #' 
+  #' Arguments:
+  #' @param l: L parameter for the right side of the convex combination
+  #' @param x_list: List of directions v
+  #' @param check_version: Checks which checking version to use.
+  #' @param method: Which Adversary to select
+  #' @param l_val_option: Option to add a random value to L or not
+  #' @param origin: Origin to use
+
+  bisection_results <- foreach (i = 1:nrow(x_list), .combine = rbind) %dorng% {
+    bisection_results <- multi_bisect(l = l, x = x_list[i, ], method = method, 
+                                      verb = verb, check_version = check_version, 
+                                      l_val_option = l_val_option, origin = origin)
+    hidden_c <- bisection_results[[1]]
+    outlier_type <- bisection_results[[2]]
+    
+    if(origin %in% c("random", "weighted")){ #Can't really reevaluate more elegantly,
+      #and don't want to completely clutter the Global Environment 
+      origin = invisible(get_origin(origin))
+    }
+    
+    if (outlier_type %in% c("H1", "H2")) {
+      result_point <- hidden_c * (x_list[i, ]) + origin
+      result_point[length(result_point) + 1] = outlier_type 
+      #'doPar has a weird way of dealing with 
+      #'the outcome of the loops, so we need 
+      #'to handle the results this way
+    }else{result_point = matrix(0,1,ncol(DB)-1)}
+    result_point
+  }
+  return(bisection_results)
+}
+
+sc_routine <- function(l, x_list, method, verb,check_version,
+                       l_val_option,origin){
+  #' @title Single core execution of Bisect.
+  #' @description Does the needed calculations and handling to perform 
+  #' BISECT with only one core. 
+  #' 
+  #' Arguments:
+  #' @param l: L parameter for the right side of the convex combination
+  #' @param x_list: List of directions v
+  #' @param check_version: Checks which checking version to use.
+  #' @param method: Which Adversary to select
+  #' @param l_val_option: Option to add a random value to L or not
+  #' @param origin: Origin to use
+  #' @param verb: Control if verbose
+  
+  pb <- progress_bar$new(total = nrow(x_list)) 
+  hidden_x_list <- matrix(0, nrow = nrow(x_list), ncol = ncol(x_list))
+  hidden_x_type <- matrix(0, nrow = nrow(x_list), ncol = 1)
+  
+  for(i in 1:nrow(x_list)){
+    bisection_results <- multi_bisect(l = l, x = x_list[i, ], method = method, 
+                                      verb = verb, check_version = check_version, 
+                                      l_val_option = l_val_option, origin = origin)
+    hidden_c <- bisection_results[[1]]
+    outlier_type <- bisection_results[[2]]
+    
+    if(origin %in% c("random", "weighted")){ #Can't really reevaluate more elegantly,
+      #and don't want to completely clutter the Global Environment 
+      origin = invisible(get_origin(origin))
+    }
+    pb$tick()
+    if (outlier_type %in% c("H1", "H2")) {
+      hidden_x_list[i,] <- hidden_c * (x_list[i, ]) + origin
+      hidden_x_type[i,] = outlier_type 
+      #'doPar has a weird way of dealing with 
+      #'the outcome of the loops, so we need 
+      #'to handle the results this way
+    }else{result_point = matrix(0,1,ncol(DB)-1)}
+  }
+  return(cbind(hidden_x_list,hidden_x_type))
+}
 
 
+  
+  
 interval_check <- function(l, method, x, origin, parts = 5, ...) {
-  #' @title Interval Refining function
+  #' @title Interval Refining function (the *cut trick*)
   #' @description  Breaks the interval in however many parts selected
   #' (defaults to 5)
-  #' and checks if each part is an Outlier or an Inlier in the global space (D).
-  #' After that it stores each subinterval such in a single list, that then is
+  #' and checks if each part is an Outlier or an Inlier in the full space.
+  #' After that it stores each subinterval in a single list, that then is
   #' returned
   #'
   #' Arguments:
-  #' @param l: Length of the original interval
-  #' @param method: ODM
-  #' @param x: Directional vector selected
-  #' @param parts: Number of parts to which cut the interval
+  #' @param l: Length of the original interval.
+  #' @param method: ODM.
+  #' @param x: Directional vector selected.
+  #' @param parts: Number of parts to which cut the interval.
+  #' @param ...: Extra parameters to pass to the Adversaries. 
 
 
   D <- 1:(ncol(DB) - 2)
@@ -51,32 +134,38 @@ interval_check <- function(l, method, x, origin, parts = 5, ...) {
     previous <- check[i]
   }
   if(length(interval) == 0){
-    interval <- append(interval, list(list(
-      c(
-        segmentation_points[1],
-        segmentation_points[length(check)]
-      ),
-      c(check[i - 1], check[i])
-    )))
+    
+    if(check[1] == 1){
+      interval <- append(interval, list(list(
+        c(
+          segmentation_points[1],
+          segmentation_points[length(check)]
+        ),
+        c(check[i - 1], check[i])
+      )))
+    }
+    if(check[1] == -1){
+      interval = interval_check(2*l, method, x, origin, parts)
+    }
   }
   return(interval)
 }
 
 
-multi_bisect <- function(x, l, iternum = 30, 
+multi_bisect <- function(x, l, iternum = 50, 
                          method, verb = F, check_version, 
                          l_val_option = "fixed", origin, ...) {
   #' @title Multi Bisection algorithm function
   #'
   #' @description Performs the multi bisection algorithm to any given
   #' L and direction x. It outputs the value c in which the function f
-  #' finds a 0 of the form: f(c*x + \hat{\mu}).
+  #' finds a 0 of the form: f(c*x + origin).
   #'
   #' Arguments:
-  #' @param x: Directional vector
+  #' @param x: Vector
   #' @param L: Length of the original interval
-  #' @param iternum: Number of iterations to perform
-  #' @param method: ODM
+  #' @param iternum: Number of iterations to perform in the bisection method
+  #' @param method: Adversary
   #' @param verb: Chooses if the function should be verbosal or not
   #' @param ...: Extra param. passed to f.
   
@@ -105,7 +194,7 @@ multi_bisect <- function(x, l, iternum = 30,
     outlier_type <- check_if_outlier[[2]]
 
     if (outlier_indicator == 0) {
-      print(glue("x in {outlier_type}"))
+      if (verb == TRUE){print(glue("x in {outlier_type}"))}
       return(list(c, outlier_type))
       break
     }
@@ -123,13 +212,14 @@ main_multibisect <- function(gen_points = 100, method = "mahalanobis",
                              seed = FALSE, verb = F, check_version = "fast", 
                              dev_opt = F, num_workers = detectCores()/2, 
                              l_val_option = "fixed", type = "centroid", ...) {
-  #' @title Multi Bisection main function
+  #' @title BISECT main function
   #'
-  #' @description Main function of the Multi bisection algorithm. It generates
-  #' the directional vectors and give it to the multi_bisect function to
-  #' perform the actual multi bisect algorithm. It later organaizes all the
-  #' data and stores the relevant information into a Hidden Outlier Generation
-  #' Object.
+  #' @description Main function of the BISECT algorithm. It generates
+  #' the directional vectors and give it to the *multi_bisect* function to
+  #' perform the actual BISECT algorithm as seen in 
+  #' *Efficient Generation of Hidden Outliers for Improved Outlier Detection*. 
+  #' It later organizes all the data and stores the relevant information into a
+  #' Hidden Outlier Generation Object.
   #'
   #' Arguments:
   #' @param gen_points: Number of generated directions
@@ -138,6 +228,9 @@ main_multibisect <- function(gen_points = 100, method = "mahalanobis",
   #' random and store it in seeds/
   #' @param verb: Selects whether the function is verbosal or not
   #' @param dev_opt: Activate the developer options
+  #' @param num_workers: Number of workers for parallelization
+  #' @param l_val_option: Option to add a random value to L or not
+  #' @param type: Origin
 
 
   if (class(seed) == "numeric") {
@@ -152,11 +245,10 @@ main_multibisect <- function(gen_points = 100, method = "mahalanobis",
   }
   if (dev_opt == T) {
     warning(glue("The developer option has been activated.
-                                This means that the ODM environment will not
-                                be deleted, and therefore some collusion might
-                                occur with following experiments. Poceed with
-                                caution
-                                "))
+                 This means that the ODM environment will not
+                 be deleted, and therefore some collusion might
+                 occur with following experiments. Poceed with
+                 caution"))
   }
   if(exists("ODM_env", envir = globalenv()) != T){
     fit_all_methods(method,...)
@@ -165,31 +257,18 @@ main_multibisect <- function(gen_points = 100, method = "mahalanobis",
   x_list <- runif_on_sphere(n = gen_points, d = ncol(DB) - 2, r = 1)
   l <- max(sqrt(rowSums(DB[2:(ncol(DB) - 1)]^2)))
   origin <- get_origin(type)
-  registerDoParallel(num_workers)
   
   tic()
   print(glue("Generating..."))
-  bisection_results <- foreach (i = 1:nrow(x_list), .combine = rbind) %dorng% {
-    bisection_results <- multi_bisect(l = l, x = x_list[i, ], method = method, 
-                                 verb = verb, check_version = check_version, 
-                                 l_val_option = l_val_option, origin = origin)
-    hidden_c <- bisection_results[[1]]
-    outlier_type <- bisection_results[[2]]
-    
-    if(type %in% c("random", "weighted")){ #Can't really reevaluate more elegantly,
-      #and don't want to completely clutter the Global Environment 
-      origin = get_origin(type)
+  
+  if(num_workers == 1){
+    bisection_results <- sc_routine(l, x_list, method, verb,check_version,l_val_option,origin,type,seed)
+  }else{
+    registerDoParallel(num_workers)
+      bisection_results <- parall_routine(l, x_list, method, verb,check_version,
+                     l_val_option,origin,type,seed)
     }
-    
-    if (outlier_type %in% c("H1", "H2")) {
-      result_point <- hidden_c * (x_list[i, ]) + origin
-      result_point[length(result_point) + 1] = outlier_type 
-      #'doPar has a weird way of dealing with 
-      #'the outcome of the loops, so we need 
-      #'to handle the results this way
-    }else{result_point = matrix(0,1,ncol(DB)-1)}
-    result_point
-  }
+  
   exec_time <- toc()
   exec_time <- exec_time$callback_msg
   stopImplicitCluster()
