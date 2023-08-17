@@ -3,6 +3,8 @@ library(reticulate)
 source("src/registry_extras/utils.R")
 
 get_subspaces <- function(){
+  #' @description Auxiliary function to obtain all possible subspaces.
+  
   if (ncol(DB)-2 <= 11){
     print(glue("Calculating all possible subspaces..."))
     supS = set_power(as.numeric(1:(ncol(DB)-2)))
@@ -16,6 +18,7 @@ get_subspaces <- function(){
 }
 
 random_subspace <- function(){
+  #' @description Auxiliary function to randomly sample subspaces.
   supS = set()
   pb <- progress_bar$new(total = 2^11-2) 
   
@@ -84,19 +87,6 @@ fit_all_methods <- function(method,...){
   
   model = ODM_env[[glue("method{set_names(1:(ncol(DB)-2))}")]]
   out = array(0, dim = nrow(DB))
-  # for ( i in 1:nrow(DB)){
-  #   x = DB[i,]
-  #   names = names(x)
-  #   x = as.matrix(x)
-  #   dim(x) <- NULL
-  #   
-  #   names(x) = names
-  #   if(model(x)){
-  #     out[i] = 1
-  #   }
-  # }
-  # DB["Out"] = out
-  # DB <<- DB
 } 
 
 fit <- function(method, S,...){
@@ -163,7 +153,18 @@ fit <- function(method, S,...){
       return(prediction == 1 )
     }
   }
-  
+  if (method == "kNN"){
+    model <- import("pyod.models.knn")
+    lof <- model$KNN(...)
+    
+    sS = set_subspace_grab(S)
+    lof$fit(DB[sS])
+    
+    result = function(x){
+      prediction = lof$predict(matrix(x[sS], ncol = length(sS)))
+      return(prediction == 1)
+    }
+  }  
   if (method == "ECOD"){
     ecod <- import("pyod.models.ecod")
     ECOD = ecod$ECOD(...)

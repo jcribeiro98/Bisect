@@ -9,7 +9,18 @@ source("src/ODM/inference_methods.R")
 source("src/registry_extras/get_origin.R")
 
 parall_routine <- function(l, x_list, method, verb,
-                           check_version,l_val_option, origin, type, seed){
+                           check_version,l_val_option, origin){
+  #' @title Parallelization of Bisect.
+  #' @description Does the needed calculations and handling to perform 
+  #' BISECT under parallelization. 
+  #' 
+  #' Arguments:
+  #' @param l: L parameter for the right side of the convex combination
+  #' @param x_list: List of directions v
+  #' @param check_version: Checks which checking version to use.
+  #' @param method: Which Adversary to select
+  #' @param l_val_option: Option to add a random value to L or not
+  #' @param origin: Origin to use
 
   bisection_results <- foreach (i = 1:nrow(x_list), .combine = rbind) %dorng% {
     bisection_results <- multi_bisect(l = l, x = x_list[i, ], method = method, 
@@ -18,9 +29,9 @@ parall_routine <- function(l, x_list, method, verb,
     hidden_c <- bisection_results[[1]]
     outlier_type <- bisection_results[[2]]
     
-    if(type %in% c("random", "weighted")){ #Can't really reevaluate more elegantly,
+    if(origin %in% c("random", "weighted")){ #Can't really reevaluate more elegantly,
       #and don't want to completely clutter the Global Environment 
-      origin = invisible(get_origin(type))
+      origin = invisible(get_origin(origin))
     }
     
     if (outlier_type %in% c("H1", "H2")) {
@@ -36,8 +47,20 @@ parall_routine <- function(l, x_list, method, verb,
 }
 
 sc_routine <- function(l, x_list, method, verb,check_version,
-                       l_val_option,origin, type, seed){
-
+                       l_val_option,origin){
+  #' @title Single core execution of Bisect.
+  #' @description Does the needed calculations and handling to perform 
+  #' BISECT with only one core. 
+  #' 
+  #' Arguments:
+  #' @param l: L parameter for the right side of the convex combination
+  #' @param x_list: List of directions v
+  #' @param check_version: Checks which checking version to use.
+  #' @param method: Which Adversary to select
+  #' @param l_val_option: Option to add a random value to L or not
+  #' @param origin: Origin to use
+  #' @param verb: Control if verbose
+  
   pb <- progress_bar$new(total = nrow(x_list)) 
   hidden_x_list <- matrix(0, nrow = nrow(x_list), ncol = ncol(x_list))
   hidden_x_type <- matrix(0, nrow = nrow(x_list), ncol = 1)
@@ -49,9 +72,9 @@ sc_routine <- function(l, x_list, method, verb,check_version,
     hidden_c <- bisection_results[[1]]
     outlier_type <- bisection_results[[2]]
     
-    if(type %in% c("random", "weighted")){ #Can't really reevaluate more elegantly,
+    if(origin %in% c("random", "weighted")){ #Can't really reevaluate more elegantly,
       #and don't want to completely clutter the Global Environment 
-      origin = invisible(get_origin(type))
+      origin = invisible(get_origin(origin))
     }
     pb$tick()
     if (outlier_type %in% c("H1", "H2")) {
@@ -69,18 +92,19 @@ sc_routine <- function(l, x_list, method, verb,check_version,
   
   
 interval_check <- function(l, method, x, origin, parts = 5, ...) {
-  #' @title Interval Refining function
+  #' @title Interval Refining function (the *cut trick*)
   #' @description  Breaks the interval in however many parts selected
   #' (defaults to 5)
-  #' and checks if each part is an Outlier or an Inlier in the global space (D).
-  #' After that it stores each subinterval such in a single list, that then is
+  #' and checks if each part is an Outlier or an Inlier in the full space.
+  #' After that it stores each subinterval in a single list, that then is
   #' returned
   #'
   #' Arguments:
-  #' @param l: Length of the original interval
-  #' @param method: ODM
-  #' @param x: Directional vector selected
-  #' @param parts: Number of parts to which cut the interval
+  #' @param l: Length of the original interval.
+  #' @param method: ODM.
+  #' @param x: Directional vector selected.
+  #' @param parts: Number of parts to which cut the interval.
+  #' @param ...: Extra parameters to pass to the Adversaries. 
 
 
   D <- 1:(ncol(DB) - 2)
@@ -128,20 +152,20 @@ interval_check <- function(l, method, x, origin, parts = 5, ...) {
 }
 
 
-multi_bisect <- function(x, l, iternum = 30, 
+multi_bisect <- function(x, l, iternum = 50, 
                          method, verb = F, check_version, 
                          l_val_option = "fixed", origin, ...) {
   #' @title Multi Bisection algorithm function
   #'
   #' @description Performs the multi bisection algorithm to any given
   #' L and direction x. It outputs the value c in which the function f
-  #' finds a 0 of the form: f(c*x + \hat{\mu}).
+  #' finds a 0 of the form: f(c*x + origin).
   #'
   #' Arguments:
-  #' @param x: Directional vector
+  #' @param x: Vector
   #' @param L: Length of the original interval
-  #' @param iternum: Number of iterations to perform
-  #' @param method: ODM
+  #' @param iternum: Number of iterations to perform in the bisection method
+  #' @param method: Adversary
   #' @param verb: Chooses if the function should be verbosal or not
   #' @param ...: Extra param. passed to f.
   
@@ -188,13 +212,14 @@ main_multibisect <- function(gen_points = 100, method = "mahalanobis",
                              seed = FALSE, verb = F, check_version = "fast", 
                              dev_opt = F, num_workers = detectCores()/2, 
                              l_val_option = "fixed", type = "centroid", ...) {
-  #' @title Multi Bisection main function
+  #' @title BISECT main function
   #'
-  #' @description Main function of the Multi bisection algorithm. It generates
-  #' the directional vectors and give it to the multi_bisect function to
-  #' perform the actual multi bisect algorithm. It later organaizes all the
-  #' data and stores the relevant information into a Hidden Outlier Generation
-  #' Object.
+  #' @description Main function of the BISECT algorithm. It generates
+  #' the directional vectors and give it to the *multi_bisect* function to
+  #' perform the actual BISECT algorithm as seen in 
+  #' *Efficient Generation of Hidden Outliers for Improved Outlier Detection*. 
+  #' It later organizes all the data and stores the relevant information into a
+  #' Hidden Outlier Generation Object.
   #'
   #' Arguments:
   #' @param gen_points: Number of generated directions
@@ -203,6 +228,9 @@ main_multibisect <- function(gen_points = 100, method = "mahalanobis",
   #' random and store it in seeds/
   #' @param verb: Selects whether the function is verbosal or not
   #' @param dev_opt: Activate the developer options
+  #' @param num_workers: Number of workers for parallelization
+  #' @param l_val_option: Option to add a random value to L or not
+  #' @param type: Origin
 
 
   if (class(seed) == "numeric") {

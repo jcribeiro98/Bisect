@@ -6,6 +6,21 @@ source("src/ODM/inference_methods.R")
 
 
 get_origin <- function(type){
+  #' @title Get the origin for Bisect
+  #' @description Auxiliary function to get the origin for BISECT. Multiple 
+  #' different origin selection methods are included. The one presented in 
+  #' *Efficient Generation of Hidden Outliers for Improved Outlier Detection*
+  #' corresponds to *type == 'weighted'*
+  #' 
+  #' Arguments:
+  #' @param type: Controls the origin type. Currently, we have implemented 
+  #'              -centroid: õ is the centroid of the data.
+  #'              -least_outliers: Given a fitted LOF, õ is selected as the 
+  #'              point that obtained the lowest outlier score.
+  #'              -random: Full random selection.
+  #'              -weighted: Random selection with a weighted distribution using 
+  #'              LOF scores. 
+
   if (type == "centroid"){
     print(glue("Origin method: {type}"))
     origin = colMeans(DB[2:(ncol(DB) - 1)])

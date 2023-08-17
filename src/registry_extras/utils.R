@@ -8,17 +8,19 @@ DB_gen <- function(db, true_inliers = FALSE, method = "pyod_LOF",...){
 #' 
 #' @description The methods developed in this project utilizes an specific
 #' data.frame architecture to ease a lot of the calls needed during the 
-#' *bisect* method. We included a function to reshape any given matrix/df 
+#' BISECT method. We included a function to reshape any given matrix/df 
 #' into the desired architecture. The final df will consist of 
-#'            ~id |  y1 |  ... | yn | ~dM
+#'            ~id |  y1 |  ... | yn | ~Out
 #' Where id is a vector of ids, y1...yn are a renaming of the numerical columns
-#' presented on the prior dataframe and dM is the Mahalanobis distance of all 
-#' the data.
-#' 
-#' @note ~ -> Indicates that the df feature might change in further releases.
+#' presented on the prior dataframe and Out is a {0,1} indicator if the point
+#' has been detected as an outlier or not.
 #' 
 #' Arguments
-#' @param db :(matrix/data.frame) Database to reshape.
+#' @param db : Dataset to reshape.
+#' @param true_inliers: Boolean controlling if to do an inference pass to detected
+#' the inliers
+#' @param method: If the previous boolean is TRUE, then method to calculate if
+#' it is an outlier with.
 
   
   n = ncol(db)
@@ -64,7 +66,7 @@ DB_gen <- function(db, true_inliers = FALSE, method = "pyod_LOF",...){
 }
 
 critval <- function(S,verb = F){
-  #' @title Critical value given by a normal DB while using the MD. 
+  #' @title Critical value given by a normal DB while using the mahalanobis. 
   #' 
   #' Arguments
   #' @param S : (set) Set of indices of the  features conforming the DB.
@@ -96,6 +98,13 @@ set_names <- function(s, sep = "_"){
 }
 
 set_subspace_grab <- function(S){
+  #' @title Get the column names of a DB object 
+  #' @description Get the column names for grabbing an specific subspaces by its 
+  #' set definition
+  #' 
+  #' Arguments:
+  #' @param S: Set to obtain from DB
+  
   sS = c(0)
   j = 1
   for (i in S){
@@ -106,6 +115,8 @@ set_subspace_grab <- function(S){
 }
 
 set_index_grab <- function(S){
+  #' @description  Get the indexes of a set object 
+
   sS = c(0)
   j = 1
   for (i in S){
@@ -137,6 +148,10 @@ distmah <- function(S,x){
 }
 
 init_python <- function(){
+  #' @description Initiates the "hidden_out" virtual environment to 
+  #' perform all of the experiments with. 
+  
+  library(reticulate)
   if (!("hidden_out" %in% conda_list()[,1])){
     stop("No virtual enviroment by the name *hidden_out* has been found.
   Please, read the docs to learn how to install the python methods.
@@ -144,8 +159,6 @@ init_python <- function(){
   and try again.")
   }
   use_condaenv("hidden_out")
-  np <- import("numpy")
-  
 }
 
 
