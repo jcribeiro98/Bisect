@@ -4,6 +4,6 @@ seed/
 .Rproj.user
 *.Rproj
 .Rhistory
-experiments/
+!experiments/
 databases/
 .vscode/
