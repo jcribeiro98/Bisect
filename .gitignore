@@ -4,13 +4,6 @@ seed/
 .Rproj.user
 *.Rproj
 .Rhistory
-experiments/
+!experiments/
 databases/
 .vscode/
-!experiments/new_balancing_experiments.R
-!experiments/launch_balancing_exp.R
-!experiments/one_class_classification.R
-!experiments/launch_occ.R
-!experiments/new_exec_time_exp-synth.R
-!experiments/new_exec_time_exp-real.R
-!experiments/Appendinx/
