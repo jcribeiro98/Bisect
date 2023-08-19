@@ -1,0 +1,3 @@
+# Source code for the extra baselines
+
+Experiments in [2] also include some source code belonging to a different repository. This code was used to performed Oversampling in Supevised Outlier Detection with the method cWGAN. In order to execute the experiments with it, pull the repository into this folder, and then paste the function `launch_balancing_with_cwgan.R` inside it. Repository can be accessed in the following [repo](https://github.com/johaupt/GANbalanced/).
