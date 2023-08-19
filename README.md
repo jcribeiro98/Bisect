@@ -32,5 +32,5 @@ Source Code can be found in the `src/` directory.
 
 ## References
 
-[1] Steinbuss, G., Böhm, K. _Hiding outliers in high-dimensional data spaces_. Int J Data Sci Anal 4, 173–189 (2017). https://doi.org/10.1007/s41060-017-0068-8
+[1] Steinbuss, G., Böhm, K. _Hiding outliers in high-dimensional data spaces_. Int J Data Sci Anal 4, 173–189 (2017).
 [2] Anonimized, _Efficient Generation of Hidden Outliers for Improved Outlier Detection._
