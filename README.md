@@ -29,7 +29,7 @@ Source Code can be found in the `src/` directory.
 
 ## User Guide
 
-  An example of use to generate hidden outliers using this package is included in the file `example.R`. The directory `experiments/` contains all of the necesary files to reproduce the experiments from [2].
+  An example of use to generate hidden outliers using this code is due, and will be included in the file `example.R`. The directory `experiments/` contains all of the necesary files to reproduce the experiments from [2].
 
 ## References
 
